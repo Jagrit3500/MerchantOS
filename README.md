@@ -1,4 +1,4 @@
-# 🛡️ MerchantOS: Autonomous Multi-Agent Settlement & Compliance Recovery Copilot
+# ??? MerchantOS: Autonomous Multi-Agent Settlement & Compliance Recovery Copilot
 
 > **Track 3: AI Revenue Recovery** | *Built for Indian MSMEs & Merchants operating on Payment Aggregators (Razorpay)*
 
@@ -10,33 +10,33 @@
 
 ---
 
-## 📌 Executive Summary & Problem Statement
+## ?? Executive Summary & Problem Statement
 
-Indian merchants—especially fast-growing D2C brands, freelancers, and small businesses—frequently encounter sudden settlement holds, unexplained fee deductions, and frozen settlement accounts on payment aggregators like Razorpay.
+Indian merchants?especially fast-growing D2C brands, freelancers, and small businesses?frequently encounter sudden settlement holds, unexplained fee deductions, and frozen settlement accounts on payment aggregators like Razorpay.
 
 When holds happen:
-- **Merchants are kept in the dark**: Generic support tickets take weeks, citing vague 'risk parameters' with no actionable remediation steps.
-- **Working capital is paralyzed**: Up to weeks of revenue remain trapped in escrow accounts, causing payroll and inventory defaults.
+- **Merchants are kept in the dark**: Generic support tickets take weeks, citing vague "risk parameters" with no actionable remediation steps.
+- **Working capital is paralyzed**: Weeks of revenue remain trapped in escrow accounts, causing payroll and inventory defaults.
 - **Fee variances go unnoticed**: Hidden interchange rates, GST rounding discrepancies, and MDR variance leak significant margin.
 - **Appeals lack legal grounding**: Merchants submit angry emails instead of legally grounded complaints referencing the **RBI Master Directions on Payment Aggregators (effective September 2025)** and **Card Network Rules (Visa VDMP / Mastercard ECP)**.
 
-**MerchantOS** solves this by acting as an **Autonomous Merchant Compliance & Settlement Resolution Copilot**. It audits merchant transactions, diagnoses fund holds, detects fee leakage, generates audit-ready resolution dossiers, and drafts legally airtight escalation notices—transforming trapped capital into recovered cash flow.
+**MerchantOS** solves this by acting as an **Autonomous Merchant Compliance & Settlement Resolution Copilot**. It audits merchant transactions, diagnoses fund holds, detects fee leakage, generates audit-ready resolution dossiers, and drafts legally airtight escalation notices?transforming trapped capital into recovered cash flow.
 
 ---
 
-## 🚀 Live Demonstration: ₹94,688.00 Trapped Capital Action Card
+## ?? Live Demonstration: ?94,688.00 Trapped Capital Action Card
 
 In our live sample portfolio, MerchantOS instantly flags and segregates:
-- **₹75,000.00**: High-risk ticket KYC hold pending In-Person Verification (IPV).
-- **₹18,500.00**: Escrow settlement delay past statutory T+2 TAT.
-- **₹1,188.00**: Unauthorized MDR fee variance and GST over-deduction.
-- **Total Immediate Actionable Value**: **₹94,688.00**
+- **?75,000.00**: High-risk ticket KYC hold pending In-Person Verification (IPV).
+- **?18,500.00**: Escrow settlement delay past statutory T+2 TAT.
+- **?1,188.00**: Unauthorized MDR fee variance and GST over-deduction.
+- **Total Immediate Actionable Value**: **?94,688.00**
 
 ---
 
-## 🏛️ System Architecture
+## ??? System Architecture
 
-`mermaid
+```mermaid
 graph TD
     A[Merchant Data & Policy Inputs] --> B[Unified Home Command Center :8501]
     
@@ -57,41 +57,41 @@ graph TD
     C --> H[Resolution Dossier & Razorpay Support Ticket]
     D --> I[Arithmetic Balance Audit & Fee Variance Dispute]
     E --> J[Nodal Officer & RBI Ombudsman Legal Notice]
-`
+```
 
 ---
 
-## 🤖 The Three Specialized Copilots
+## ?? The Three Specialized Copilots
 
-### 1️⃣ Agent 1: KYC & Fund Hold Diagnosis Copilot (Port 8502)
+### 1?? Agent 1: KYC & Fund Hold Diagnosis Copilot (Port 8502)
 *Automates diagnosis of frozen accounts, classifies risk tiers, and builds audit-ready compliance dossiers.*
 - **Dynamic Risk Scoring**: Evaluates business structure, GST registration, high-ticket transactions, and dispute volume to calculate an audit risk score (0-100).
 - **Evidence Checklist Builder**: Generates precise required documentation (e.g., GST Certificate, Cancelled Cheque, In-Person Verification video script).
 - **Automated Ticket Drafter**: Formats structured support tickets citing Razorpay Merchant Onboarding norms.
-- **🛡️ Statutory Guardrail Refusal**: If a merchant refuses statutory obligations (e.g., refuses mandatory In-Person Verification under RBI Master Direction 2025), Agent 1 **honestly refuses** to generate false evasion appeals and guides the merchant to proper compliance.
+- **??? Statutory Guardrail Refusal**: If a merchant refuses statutory obligations (e.g., refuses mandatory In-Person Verification under RBI Master Direction 2025), Agent 1 **honestly refuses** to generate false evasion appeals and guides the merchant to proper compliance.
 
-### 2️⃣ Agent 2: Settlement Reconciliation & Fee Variance Auditor (Port 8503)
+### 2?? Agent 2: Settlement Reconciliation & Fee Variance Auditor (Port 8503)
 *Line-by-line financial audit comparing gross transactions against settled payouts and agreed MDR.*
-- **Multi-Issue Transaction Deduplication**: Combines overlapping issues (e.g., a transaction that is both ON HOLD and has a FEE VARIANCE) into a single grouped record with stacked badges—eliminating double-counting.
+- **Multi-Issue Transaction Deduplication**: Combines overlapping issues (e.g., a transaction that is both `ON HOLD` and has a `FEE VARIANCE`) into a single grouped record with stacked badges?eliminating double-counting.
 - **Deterministic Arithmetic Balance Strip**:
-  Gross Volume = Settled + Held/Pending + Fees & Tax + Fee Variance (✓ Reconciled)
+  `Gross Volume = Settled + Held/Pending + Fees & Tax + Fee Variance (? Reconciled)`
 - **Settlement Health Index**:
-  Health Index = 100 - (Hold Deductions + TAT Penalties + Fee Discrepancies)
+  `Health Index = 100 - (Hold Deductions + TAT Penalties + Fee Discrepancies)`
 - **Audit-Ready Dispute Notice**: Formats itemized dispute tables with expected vs. charged MDR percentages ready for settlement dispute teams.
 
-### 3️⃣ Agent 3: Regulatory Escalation & Ombudsman Copilot (Port 8504)
+### 3?? Agent 3: Regulatory Escalation & Ombudsman Copilot (Port 8504)
 *Structured legal escalations adhering to the 3-Tier Grievance Redressal Framework.*
 - **Tier 1**: Level 1 Support Escalation with Razorpay Ticket ID reference.
 - **Tier 2**: Razorpay Principal Nodal Officer (PNO) Formal Notice (citing Clause 13.2 Grievance Redressal).
 - **Tier 3**: RBI Integrated Ombudsman Scheme (2021) Form Draft.
-- **⚖️ Commercial Decision Exclusion Grounding**: Adheres to Clause 10 of the RBI Ombudsman Scheme. Rather than arguing aggregators subjective commercial risk appetite, appeals are anchored strictly to **procedural defaults**:
+- **?? Commercial Decision Exclusion Grounding**: Adheres to Clause 10 of the RBI Ombudsman Scheme. Rather than arguing aggregators subjective commercial risk appetite, appeals are anchored strictly to **procedural defaults**:
   - Failure to provide mandatory 24-hour prior written notice before freezing funds.
   - Failure to communicate specific compliance deficiencies within statutory TAT.
   - Breach of T+2 settlement transfer rules without recorded regulatory orders.
 
 ---
 
-## 🔍 Verified Regulatory Grounding
+## ?? Verified Regulatory Grounding
 
 MerchantOS does **not** rely on unverified claims or LLM hallucinations:
 | Claim / Metric | Regulatory Source & Grounding |
@@ -102,20 +102,16 @@ MerchantOS does **not** rely on unverified claims or LLM hallucinations:
 
 ---
 
-## 🛠️ Installation & Setup
-
-### Prerequisites
-- Python 3.11 or higher
-- Google Gemini API Key (GEMINI_API_KEY)
+## ??? Quickstart
 
 ### 1. Clone the Repository
-`ash
+```bash
 git clone https://github.com/Jagrit3500/MerchantOS.git
 cd MerchantOS
-`
+```
 
 ### 2. Set Up Virtual Environment & Dependencies
-`ash
+```bash
 python -m venv venv
 # On Windows:
 .\venv\Scripts\activate
@@ -123,59 +119,39 @@ python -m venv venv
 source venv/bin/activate
 
 pip install -r requirements.txt
-`
+```
 
 ### 3. Configure Environment Variables
-Create a .env file in the root directory:
-`env
+Create a `.env` file in the root directory:
+```env
 GEMINI_API_KEY=your_gemini_api_key_here
-PORT_HOME=8501
-PORT_AGENT1=8502
-PORT_AGENT2=8503
-PORT_AGENT3=8504
-MERCHANTOS_HOST=localhost
-`
+```
 
-### 4. Ingest Regulatory Knowledge Base
-Initialize and embed the regulatory documents into ChromaDB:
-`ash
-python ingest_docs.py
-`
-
-### 5. Launch the Platform
-You can run all components simultaneously:
-
-`ash
-# Terminal 1: Home Command Center
-streamlit run home.py --server.port 8501
-
-# Terminal 2: Agent 1 - KYC & Fund Hold Diagnosis
-streamlit run Agent1/app.py --server.port 8502
-
-# Terminal 3: Agent 2 - Settlement Reconciliation
-streamlit run Agent2/app.py --server.port 8503
-
-# Terminal 4: Agent 3 - Regulatory Escalation
-streamlit run Agent3/app.py --server.port 8504
-`
-
-Access the platform at http://localhost:8501.
+### 4. Launch the Entire Platform (One Single Command)
+```bash
+python launch.py
+```
+This automatically launches all 4 services:
+- **Command Center**: `http://localhost:8501`
+- **Agent 1 (KYC Copilot)**: `http://localhost:8502`
+- **Agent 2 (Reconciliation)**: `http://localhost:8503`
+- **Agent 3 (Escalation)**: `http://localhost:8504`
 
 ---
 
-## 🧪 Verification & Audit Integrity
+## ?? Verification & Audit Integrity
 - **100% Policy-Driven**: All recommendations, document checklists, and dispute letters are dynamically linked to ChromaDB document chunks with verifiable citation metadata.
-- **Zero Hardcoding**: All URLs, ports, dates, and file paths are dynamically resolved via system environment variables and Python standard os.path.
-- **Pre-tested & Validated**: End-to-end multi-agent workflow verified with live headless browser subagents and recorded demonstration sessions.
+- **Zero Hardcoding**: All URLs, ports, dates, and file paths are dynamically resolved via system environment variables and Python standard `os.path`.
+- **Pre-tested & Validated**: End-to-end multi-agent workflow verified with live browser testing and recorded demonstration sessions.
 
 ---
 
-## 🏆 Hackathon Alignment: Track 3 (AI Revenue Recovery)
-1. **Direct Financial Impact**: Instantly identifies and initiates recovery on trapped capital (e.g., ₹94,688 in sample portfolio) that would otherwise sit idle or be written off.
+## ?? Hackathon Alignment: Track 3 (AI Revenue Recovery)
+1. **Direct Financial Impact**: Instantly identifies and initiates recovery on trapped capital (e.g., ?94,688 in sample portfolio) that would otherwise sit idle or be written off.
 2. **Defensible Legal Architecture**: Builds mutual confidence between merchants and payment aggregators through transparent procedural compliance rather than adversarial confrontation.
 3. **Autonomous Multi-Agent Collaboration**: From initial diagnosis to settlement reconciliation to statutory escalation, each agent handles a distinct phase of the financial recovery lifecycle.
 
 ---
 
-## 📄 License
+## ?? License
 This project is licensed under the MIT License.
