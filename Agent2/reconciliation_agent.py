@@ -392,7 +392,9 @@ class ReconciliationAgent:
 if __name__ == "__main__":
     import os
     agent = ReconciliationAgent()
-    sample = os.path.join(os.path.dirname(__file__), "..", "sample_data", "sample_settlement.csv")
+    sample = os.path.join(os.path.dirname(__file__), "sample_data", "sample_settlement.csv")
+    if not os.path.exists(sample):
+        sample = os.path.join(os.path.dirname(__file__), "..", "sample_data", "sample_settlement.csv")
     with open(sample) as f:
         content = f.read()
     r = agent.parse_csv(content)

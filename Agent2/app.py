@@ -297,7 +297,9 @@ if "a2_done" not in st.session_state:
     with tab_sample:
         st.markdown("#### Test with Real Razorpay Settlement Sample")
         st.caption("Includes 15 representative transactions with holds, TAT violations, and fee overcharges.")
-        sample_path = os.path.join(_ROOT_DIR, "sample_data", "sample_settlement.csv")
+        sample_path = os.path.join(os.path.dirname(__file__), "sample_data", "sample_settlement.csv")
+        if not os.path.exists(sample_path):
+            sample_path = os.path.join(_ROOT_DIR, "sample_data", "sample_settlement.csv")
         if os.path.exists(sample_path):
             with open(sample_path) as f:
                 sc = f.read()
