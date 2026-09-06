@@ -87,7 +87,7 @@ REQUIRED_DOCS = {
 # Use consistent regular hyphens (no em dashes) for reliable string matching
 QUESTIONS = [
     ("dashboard_status", "What does your Razorpay dashboard show?",
-     ["Live Disabled", "Payment Disabled", "Under Review / Pending", "Account Suspended", "Settlement not arriving (account looks normal)"]),
+     ["Live Disabled", "Payment Disabled", "Under Review / Pending", "Account Suspended", "Settlement not arriving (account looks normal)", "Something else / Not listed (Custom Issue)"]),
     ("kyc_email", "Did you receive a KYC-related email from Razorpay?",
      ["Yes - asking for GST Certificate", "Yes - asking for other documents", "Yes - asking for IPV (in-person verification)", "No email received"]),
     ("merchant_type", "What type of business are you?",
@@ -96,6 +96,11 @@ QUESTIONS = [
      ["Yes - much higher than usual", "No - normal volume"]),
     ("chargeback", "Have you received any chargeback or dispute notices?",
      ["Yes", "No"]),
+    ("days_on_hold", "How many days has this hold or restriction been in place?",
+     ["< 3 days (Recent hold ? within initial 24h notice window)",
+      "4 to 14 days (Exceeding standard turnaround expectations)",
+      "15 to 30 days (Approaching statutory 30-day escalation threshold)",
+      "> 30 days (Exceeded 30-day window ? eligible for immediate Ombudsman filing)"]),
 ]
 
 RAG_QUERIES = {
@@ -207,7 +212,7 @@ if __name__ == "__main__":
     # Quick self-test
     agent = KYCDiagnosisAgent()
     agent.reset()
-    for ans in ["Live Disabled", "Yes - asking for GST Certificate", "Sole Proprietor (Unregistered)", "No - normal volume", "No"]:
+    for ans in ["Live Disabled", "Yes - asking for GST Certificate", "Sole Proprietor (Unregistered)", "No - normal volume", "No", "4 to 14 days (Exceeding standard turnaround expectations)"]:
         result = agent.step(ans)
     d = result["diagnosis"]
     print("Self-test:", d["hold_reason"], "|", d["merchant_type"])

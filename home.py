@@ -323,7 +323,7 @@ for col, (icon, label) in zip(flow_cols, steps_flow):
 st.markdown("<br>", unsafe_allow_html=True)
 st.markdown(
     "<div style='text-align:center;font-size:12px;color:#475569'>"
-    "MerchantOS — Autonomous Defense for Indian Merchants | Adheres to RBI Master Directions on Payment Aggregators 2025 | "
+    "MerchantOS — Autonomous Compliance & Settlement Resolution Copilot for Indian Merchants | Adheres to RBI Master Directions on Payment Aggregators 2025 | "
     "Not legal advice — consult a registered advocate for formal representation"
     "</div>",
     unsafe_allow_html=True,

@@ -1,20 +1,59 @@
 """
-Ticket Drafter — generates a legally-worded support ticket
+Ticket Drafter ? generates a legally-worded support ticket
 based on KYCDiagnosisAgent output + RAG evidence.
 """
+from datetime import date
 
 def draft_ticket(diagnosis: dict, rag_answer: str = "") -> str:
     hold_reason = diagnosis["hold_reason"]
     merchant_type = diagnosis["merchant_type"]
     docs = diagnosis["required_docs"]
     rbi_ref = docs.get("rbi_ref", "RBI PA Master Directions 2025")
+    answers = diagnosis.get("answers", {})
+
+    days_on_hold = answers.get("days_on_hold", "Not Specified")
+    today_str = date.today().strftime("%d %B %Y")
+
+    # Generate personalized statutory duration clause
+    if "> 30 days" in days_on_hold or "over 30" in days_on_hold.lower():
+        duration_clause = (
+            f"STATUTORY BREACH NOTICE: This hold has now been in place for {days_on_hold} "
+            "(exceeding the 30-day statutory resolution window prescribed under the RBI Integrated Ombudsman Scheme 2021). "
+            "As the 30-day statutory window has elapsed without remediation, this matter is immediately eligible for "
+            "Level 3 filing before the RBI Integrated Ombudsman."
+        )
+        sla_timeline = "Immediate release or final written rejection within 48 hours, failing which a formal complaint will be lodged with the RBI Ombudsman (cms.rbi.org.in)."
+    elif "15 to 30 days" in days_on_hold:
+        duration_clause = (
+            f"URGENT ESCALATION: This hold has been in effect for {days_on_hold}. "
+            "Aggregators are required to conclude dispute reviews within 30 days per RBI Grievance Redressal norms. "
+            "We are within days of statutory Ombudsman escalation."
+        )
+        sla_timeline = "Resolution within 3 business days per RBI Turnaround Time (TAT) framework."
+    elif "4 to 14 days" in days_on_hold:
+        duration_clause = (
+            f"HOLD DURATION: This settlement hold has persisted for {days_on_hold}, "
+            "exceeding standard turnaround expectations under Payment Aggregator operational directions."
+        )
+        sla_timeline = "Confirmation of document receipt and resolution timeline within 48 hours."
+    elif "< 3 days" in days_on_hold or "1 to 3" in days_on_hold:
+        duration_clause = (
+            f"INITIAL INQUIRY: This hold was placed recently ({days_on_hold}). "
+            "Per RBI Master Directions 2025, aggregators must provide written reasons for merchant settlement restrictions."
+        )
+        sla_timeline = "Written acknowledgment within 24 hours per RBI guidelines."
+    else:
+        duration_clause = f"HOLD DURATION: {days_on_hold}. I request formal timeline clarification under RBI PA Directions 2025."
+        sla_timeline = "Written acknowledgment within 24 hours per RBI guidelines."
 
     base_templates = {
-        "KYC_WRONG_DOCS": f"""Subject: Settlement Hold — Incorrect KYC Document Request (Account: [YOUR_MERCHANT_ID])
+        "KYC_WRONG_DOCS": f"""Subject: Settlement Hold ? Incorrect KYC Document Request (Account: [YOUR_MERCHANT_ID])
 
 Dear Razorpay Compliance / KYC Team,
 
-My account [YOUR_MERCHANT_ID] has been placed on hold. I am a {merchant_type}.
+My account [YOUR_MERCHANT_ID] has been placed on hold. I am registered as a {merchant_type}.
+
+{duration_clause}
 
 I note that your team has requested a GST Certificate. I respectfully submit that this document is NOT legally mandated for my merchant category under the {rbi_ref}.
 
@@ -24,117 +63,140 @@ MANDATORY DOCUMENTS I AM PROVIDING:
 ANY ONE OF:
 {chr(10).join(f"  - {d}" for d in docs['one_of'])}
 
-NOT REQUIRED FOR MY CATEGORY (per RBI):
+NOT REQUIRED FOR MY CATEGORY (per RBI PA Master Directions):
 {chr(10).join(f"  - {d}" for d in docs['not_required'])}
 
-I request:
-1. Written confirmation of the specific RBI provision requiring GST from a {merchant_type}
-2. Acceptance of the alternate documents listed above
+I formally request:
+1. Written confirmation of the specific legal provision requiring GST from a {merchant_type}
+2. Acceptance of the compliant alternate documents listed above
 3. Immediate release of my settlement hold
 
-If I do not receive a response within 5 business days, I will escalate to:
-- Razorpay Grievance Officer
-- RBI Integrated Ombudsman (https://cms.rbi.org.in)
+RESOLUTION TIMELINE REQUIRED:
+{sla_timeline}
 
 Merchant ID: [YOUR_MERCHANT_ID]
 Registered Email: [YOUR_EMAIL]
-Hold Start Date: [DATE]
+Date of Notice: {today_str}
 
 Regards,
 [YOUR_NAME]
 """,
 
-        "KYC_MISSING_DOCS": f"""Subject: Settlement Hold — KYC Document Submission (Account: [YOUR_MERCHANT_ID])
+        "KYC_MISSING_DOCS": f"""Subject: Settlement Hold ? KYC Document Submission (Account: [YOUR_MERCHANT_ID])
 
 Dear Razorpay KYC Team,
 
-My account [YOUR_MERCHANT_ID] is on hold pending KYC verification. I am a {merchant_type}.
+My account [YOUR_MERCHANT_ID] is on hold pending KYC verification. I am registered as a {merchant_type}.
 
-I am attaching the following documents as required under {rbi_ref}:
+{duration_clause}
 
-MANDATORY:
+I am attaching the complete set of verified documents required under {rbi_ref}:
+
+MANDATORY DOCUMENTS ATTACHED:
 {chr(10).join(f"  - {d}" for d in docs['mandatory'])}
 
-SUPPORTING (ONE OF):
+SUPPORTING DOCUMENT (ONE OF):
 {chr(10).join(f"  - {d}" for d in docs['one_of'])}
 
-Please confirm receipt and provide a resolution timeline within 2 business days per RBI's Turnaround Time (TAT) framework.
+RESOLUTION TIMELINE REQUIRED:
+{sla_timeline}
 
 Merchant ID: [YOUR_MERCHANT_ID]
 Registered Email: [YOUR_EMAIL]
+Date of Submission: {today_str}
 
 Regards,
 [YOUR_NAME]
 """,
 
-        "RISK_TXN_SPIKE": """Subject: Settlement Hold — Clarification on Transaction Volume (Account: [YOUR_MERCHANT_ID])
+        "RISK_TXN_SPIKE": f"""Subject: Settlement Hold ? Clarification on Transaction Volume (Account: [YOUR_MERCHANT_ID])
 
 Dear Razorpay Risk Team,
 
-My account [YOUR_MERCHANT_ID] appears to be on hold. I believe this may be related to a recent increase in transaction volume.
+My account [YOUR_MERCHANT_ID] appears to be on hold following an increase in processing volume.
 
-I want to clarify that the volume increase is due to: [EXPLAIN REASON — e.g., seasonal sale, marketing campaign].
+{duration_clause}
 
-I am providing the following to support my case:
-  - Recent invoices confirming legitimate orders
-  - Customer communication records
-  - Business explanation letter
+I want to formally clarify that this volume increase reflects genuine customer demand due to: [EXPLAIN REASON ? e.g., marketing campaign, seasonal sale, new product launch].
 
-Please review and release my settlement hold. Per RBI TAT guidelines, I expect acknowledgment within 24 hours.
+I am providing the following records to substantiate transaction authenticity:
+  - Recent sales invoices confirming legitimate order fulfillment
+  - Proof of delivery / shipment tracking details
+  - Direct customer communication records
+  - Business explanation declaration
+
+RESOLUTION TIMELINE REQUIRED:
+{sla_timeline}
 
 Merchant ID: [YOUR_MERCHANT_ID]
 Registered Email: [YOUR_EMAIL]
+Date: {today_str}
 
 Regards,
 [YOUR_NAME]
 """,
 
-        "RISK_CHARGEBACK": """Subject: Settlement Hold — Chargeback Ratio Dispute (Account: [YOUR_MERCHANT_ID])
+        "RISK_CHARGEBACK": f"""Subject: Settlement Hold ? Chargeback & Dispute Remediation (Account: [YOUR_MERCHANT_ID])
 
 Dear Razorpay Risk Team,
 
-My account [YOUR_MERCHANT_ID] is on hold. I believe this may be related to chargeback ratio.
+My account [YOUR_MERCHANT_ID] is currently restricted regarding dispute and chargeback monitoring.
 
-I am providing:
-  - Order fulfillment records (proof of delivery)
-  - Customer communication for disputed transactions
-  - Refund policy documentation
+{duration_clause}
 
-I am committed to maintaining my chargeback ratio below the 0.5% RBI threshold and request:
-1. A breakdown of which transactions triggered the hold
-2. Clear guidelines on remediation steps
-3. Timeline for hold resolution
+I am providing comprehensive documentation to address disputed transactions:
+  - Verified proof of delivery / shipment tracking for disputed orders
+  - Direct customer communications and resolution logs
+  - Published terms of service and refund policy documentation
 
-If unresolved within 30 days, I will escalate to the RBI Ombudsman.
+I am committed to maintaining my chargeback ratio strictly within card network monitoring thresholds (Visa VDMP 0.9% / Mastercard ECP 1.0%) and RBI risk governance norms, and formally request:
+1. An itemized breakdown of specific transactions triggering this hold
+2. Clear and actionable remediation criteria required for hold release
+3. Defined timeline for settlement release following this submission
+
+RESOLUTION TIMELINE REQUIRED:
+{sla_timeline}
 
 Merchant ID: [YOUR_MERCHANT_ID]
-Regards, [YOUR_NAME]
+Registered Email: [YOUR_EMAIL]
+Date: {today_str}
+
+Regards,
+[YOUR_NAME]
 """,
 
-        "REGULATORY_LEA": """Subject: Account Freeze — Request for Written Communication (Account: [YOUR_MERCHANT_ID])
+        "REGULATORY_LEA": f"""Subject: Account Freeze ? Formal Request for Written Notice & Reason (Account: [YOUR_MERCHANT_ID])
 
-Dear Razorpay Legal / Compliance Team,
+Dear Razorpay Legal & Compliance Directorate,
 
-My account [YOUR_MERCHANT_ID] appears frozen without clear communication.
+My merchant account [YOUR_MERCHANT_ID] has been frozen without formal prior written notification.
 
-If this freeze is pursuant to a Law Enforcement Agency (LEA) directive, I formally request:
-1. Written confirmation of the LEA order reference number
-2. Name of the issuing authority
-3. Scope and duration of the freeze
+{duration_clause}
 
-I am engaging legal counsel and request all future communication in writing.
+Under RBI Master Directions on Payment Aggregators 2025 and basic administrative due process, merchants are entitled to transparent communication regarding account restrictions.
 
-IMPORTANT: If I have not received written communication within 48 hours,
-I will approach the RBI Integrated Ombudsman.
+If this freeze is pursuant to a Law Enforcement Agency (LEA) or judicial directive, I formally request:
+1. Written confirmation of the formal notice or LEA order reference number
+2. Name and jurisdiction of the issuing authority / investigation agency
+3. Specific scope, affected transaction IDs, and designated duration of the freeze
+
+I have retained legal counsel and request all future communication in formal writing.
+
+RESOLUTION TIMELINE REQUIRED:
+{sla_timeline}
 
 Merchant ID: [YOUR_MERCHANT_ID]
-Regards, [YOUR_NAME]
+Registered Email: [YOUR_EMAIL]
+Date: {today_str}
+
+Regards,
+[YOUR_NAME]
 """,
     }
 
     ticket = base_templates.get(hold_reason, base_templates["KYC_MISSING_DOCS"])
 
-    _rag_ok = bool(rag_answer) and not any(p in rag_answer.lower() for p in ["i could not find", "not found in", "not present in the context"])
+    _rag_ok = bool(rag_answer) and not any(p in rag_answer.lower() for p in ["i could not find", "not found in", "not present in the context", "insufficient statutory"])
     if _rag_ok:
         ticket += f"\n---\nRELEVANT RBI PROVISION (auto-retrieved):\n{rag_answer}\n"
 

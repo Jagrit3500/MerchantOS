@@ -64,15 +64,20 @@ CURATED_EVIDENCE = {
     ),
 }
 
-# Dynamic deadline calculation
-TARGET_DEADLINE = date(2026, 9, 15)
-DAYS_REMAINING = (TARGET_DEADLINE - date.today()).days
-if DAYS_REMAINING > 0:
-    DEADLINE_STR = f"{DAYS_REMAINING} days remaining"
-elif DAYS_REMAINING == 0:
-    DEADLINE_STR = "Deadline is Today"
-else:
-    DEADLINE_STR = f"{abs(DAYS_REMAINING)} days past deadline"
+# Dynamic regulatory status & TAT clock
+def get_tat_status(diagnosis_dict):
+    if not diagnosis_dict:
+        return "Statutory Status", "IN EFFECT", "#10b981", "RBI PA Master Directions 2025"
+    days_val = diagnosis_dict.get("answers", {}).get("days_on_hold", "")
+    if "> 30 days" in days_val:
+        return "Ombudsman Window", "ELIGIBLE", "#ef4444", "Exceeded 30-day statutory SLA"
+    elif "15 to 30 days" in days_val:
+        return "Escalation Clock", "< 15 DAYS", "#f59e0b", "Until Level 3 Ombudsman filing"
+    elif "4 to 14 days" in days_val:
+        return "Aggregator TAT", "OVERDUE", "#f59e0b", "Exceeds standard 2-5 day TAT"
+    elif "< 3 days" in days_val:
+        return "Notice Window", "24 HOURS", "#38bdf8", "Statutory prior notice requirement"
+    return "Statutory Status", "IN EFFECT", "#10b981", "RBI PA Master Directions 2025"
 
 HOME_URL = os.getenv("MERCHANTOS_HOME_URL", "http://localhost:8501")
 AGENT3_URL = os.getenv("MERCHANTOS_AGENT3_URL", "http://localhost:8504")
@@ -234,11 +239,12 @@ with col_hero:
     </div>
     """, unsafe_allow_html=True)
 with col_dead:
+    w_title, w_val, w_color, w_sub = get_tat_status(st.session_state.get("diagnosis"))
     st.markdown(f"""
     <div class='deadline-card'>
-      <div style='font-size:12px;color:#94a3b8;font-weight:600'>⏳ RBI Re-KYC Deadline</div>
-      <div class='deadline-num'>{DAYS_REMAINING}</div>
-      <div class='deadline-label'>Days Remaining (Sept 15, 2026)</div>
+      <div style='font-size:12px;color:#94a3b8;font-weight:600'>⚖️ {w_title}</div>
+      <div class='deadline-num' style='color:{w_color};font-size:20px;'>{w_val}</div>
+      <div class='deadline-label'>{w_sub}</div>
     </div>
     """, unsafe_allow_html=True)
 
@@ -274,23 +280,49 @@ if not st.session_state.diagnosis_done:
 
     selected = None
     opts = q["options"]
-    cols = st.columns(2 if len(opts) > 3 else len(opts))
 
-    for i, opt in enumerate(opts):
-        with cols[i % len(cols)]:
-            if st.button(f"👉 {opt}", key=f"opt_btn_{step_num}_{i}", use_container_width=True):
-                selected = opt
+    if st.session_state.get("custom_step1_active"):
+        st.markdown("#### ✍️ Describe Your Specific Dashboard Issue")
+        st.caption("Explain the hold or restriction message appearing on your account:")
+        custom_txt = st.text_input("Issue Details:", placeholder="e.g. Settlements stopped after updating bank account or business address", key="txt_custom_input")
+        c_sub, c_can = st.columns([1, 1])
+        with c_sub:
+            if st.button("Submit Custom Issue →", key="btn_submit_custom", use_container_width=True):
+                ans = f"Custom Issue: {custom_txt.strip()}" if custom_txt.strip() else "Something else / Not listed (Custom Issue)"
+                st.session_state.custom_step1_active = False
+                res = st.session_state.agent.step(ans)
+                if res["done"]:
+                    st.session_state.diagnosis_done = True
+                    st.session_state.diagnosis = res["diagnosis"]
+                    st.session_state.rag_answer = None
+                else:
+                    st.session_state.current_q = res["next"]
+                st.rerun()
+        with c_can:
+            if st.button("↩️ Cancel", key="btn_cancel_custom", use_container_width=True):
+                st.session_state.custom_step1_active = False
+                st.rerun()
+    else:
+        cols = st.columns(2 if len(opts) > 3 else len(opts))
+        for i, opt in enumerate(opts):
+            with cols[i % len(cols)]:
+                if st.button(f"👉 {opt}", key=f"opt_btn_{step_num}_{i}", use_container_width=True):
+                    if "something else" in opt.lower() or "not listed" in opt.lower():
+                        st.session_state.custom_step1_active = True
+                        st.rerun()
+                    else:
+                        selected = opt
 
-    if selected:
-        res = st.session_state.agent.step(selected)
-        if res["done"]:
-            st.session_state.diagnosis_done = True
-            st.session_state.diagnosis = res["diagnosis"]
-            st.session_state.rag_answer = None  # trigger fetch in results view
-            st.rerun()
-        else:
-            st.session_state.current_q = res["next"]
-            st.rerun()
+        if selected:
+            res = st.session_state.agent.step(selected)
+            if res["done"]:
+                st.session_state.diagnosis_done = True
+                st.session_state.diagnosis = res["diagnosis"]
+                st.session_state.rag_answer = None  # trigger fetch in results view
+                st.rerun()
+            else:
+                st.session_state.current_q = res["next"]
+                st.rerun()
 
 # RESULTS VIEW
 else:
@@ -347,9 +379,10 @@ else:
       <div style='font-size:14px;color:#94a3b8;line-height:1.6;margin-bottom:14px'>
         {hold_info['description']}
       </div>
-      <div style='display:flex;gap:18px;font-size:12px;color:#64748b;border-top:1px solid #1e293b;padding-top:12px'>
+      <div style='display:flex;gap:18px;font-size:12px;color:#64748b;border-top:1px solid #1e293b;padding-top:12px;flex-wrap:wrap;'>
         <div>Merchant Category: <strong style='color:#e2e8f0'>{d['merchant_type']}</strong></div>
         <div>Regulatory Scope: <strong style='color:#e2e8f0'>{docs.get('rbi_ref', 'RBI PA Directions 2025')}</strong></div>
+        <div>Hold Duration: <strong style='color:#38bdf8'>{d.get('answers', {}).get('days_on_hold', 'Recent Hold')}</strong></div>
       </div>
     </div>
     """, unsafe_allow_html=True)
@@ -437,8 +470,8 @@ else:
                 st.session_state.refusal_demo_active = False
                 st.rerun()
         with c_guard:
-            btn_lbl = "↩️ Normal View" if st.session_state.get("refusal_demo_active") else "🛡️ Test Guardrail"
-            if st.button(btn_lbl, use_container_width=True):
+            btn_lbl = "↩️ Active Evidence" if st.session_state.get("refusal_demo_active") else "🛡️ Test Guardrail Refusal"
+            if st.button(btn_lbl, use_container_width=True, help="Demonstrates deliberate model refusal for non-derogable statutory requirements (e.g. mandatory CDD under PMLA)"):
                 st.session_state.refusal_demo_active = not st.session_state.get("refusal_demo_active", False)
                 st.rerun()
         with c_guide:
