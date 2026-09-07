@@ -1,4 +1,5 @@
-﻿"""
+import os
+"""
 Agent 1: KYC + Fund Hold Diagnosis Agent (MerchantOS)
 DebugQuest-style loop: reset -> step -> done
 Diagnoses why a Razorpay merchant account is held, using RBI PA Directions 2025.
@@ -23,7 +24,7 @@ HOLD_REASONS = {
     },
     "KYC_WRONG_DOCS": {
         "label": "KYC - Wrong Documents Requested", "urgency": "HIGH", "color": "red",
-        "description": "Razorpay has asked for documents NOT required by RBI for your merchant type. You have the right to dispute this.",
+        f"description": f"{os.getenv('PAYMENT_AGGREGATOR_SHORT', 'Razorpay')} has asked for documents NOT required by RBI for your merchant type. You have the right to dispute this.",
     },
     "RISK_TXN_SPIKE": {
         "label": "Risk Flag - Unusual Transaction Volume", "urgency": "MEDIUM", "color": "orange",
@@ -86,9 +87,9 @@ REQUIRED_DOCS = {
 
 # Use consistent regular hyphens (no em dashes) for reliable string matching
 QUESTIONS = [
-    ("dashboard_status", "What does your Razorpay dashboard show?",
+    ("dashboard_status", f"What does your {os.getenv('PAYMENT_AGGREGATOR_SHORT', 'Razorpay')} dashboard show?",
      ["Live Disabled", "Payment Disabled", "Under Review / Pending", "Account Suspended", "Settlement not arriving (account looks normal)", "Something else / Not listed (Custom Issue)"]),
-    ("kyc_email", "Did you receive a KYC-related email from Razorpay?",
+    ("kyc_email", f"Did you receive a KYC-related email from {os.getenv('PAYMENT_AGGREGATOR_SHORT', 'Razorpay')}?",
      ["Yes - asking for GST Certificate", "Yes - asking for other documents", "Yes - asking for IPV (in-person verification)", "No email received"]),
     ("merchant_type", "What type of business are you?",
      list(MERCHANT_TYPES.values())),
@@ -97,15 +98,15 @@ QUESTIONS = [
     ("chargeback", "Have you received any chargeback or dispute notices?",
      ["Yes", "No"]),
     ("days_on_hold", "How many days has this hold or restriction been in place?",
-     ["< 3 days (Recent hold ? within initial 24h notice window)",
+     ["< 3 days (Recent hold — within initial 24h notice window)",
       "4 to 14 days (Exceeding standard turnaround expectations)",
       "15 to 30 days (Approaching statutory 30-day escalation threshold)",
-      "> 30 days (Exceeded 30-day window ? eligible for immediate Ombudsman filing)"]),
+      "> 30 days (Exceeded 30-day window — eligible for immediate Ombudsman filing)"]),
 ]
 
 RAG_QUERIES = {
     "KYC_WRONG_DOCS":   "Is GST certificate mandatory for {merchant_type} under RBI PA Directions 2025? What alternative documents are accepted?",
-    "KYC_MISSING_DOCS": "What KYC documents must a {merchant_type} submit to Razorpay under RBI PA Directions 2025?",
+    "KYC_MISSING_DOCS": f"What KYC documents must a {{merchant_type}} submit to {os.getenv('PAYMENT_AGGREGATOR_SHORT', 'Razorpay')} under RBI PA Directions 2025?",
     "RISK_TXN_SPIKE":   "What should a merchant do when their settlement is held due to unusual transaction volume? What documents resolve a risk hold?",
     "RISK_CHARGEBACK":  "What evidence must a merchant provide to resolve a chargeback or risk hold under Payment Aggregator guidelines? How do card network dispute thresholds impact settlement releases?",
     "REGULATORY_LEA":   "What happens when a payment aggregator merchant account is frozen due to a law enforcement or regulatory directive?",
@@ -117,6 +118,9 @@ class KYCDiagnosisAgent:
     DebugQuest-style diagnostic agent.
     Mirrors the reset -> step -> done loop from DebugQuest.
     """
+
+    def __init__(self):
+        self.reset()
 
     def reset(self):
         """Start a fresh diagnosis session. Returns first question."""

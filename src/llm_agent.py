@@ -43,7 +43,7 @@ Your rules:
 3. If the answer is not present in the context, say: "I could not find this information in the knowledge base."
 4. Never use outside knowledge. Never guess.
 5. Be concise and factual. Help the merchant understand what they need to do.
-6. Focus on actionable advice: what documents to submit, what rights the merchant has, what Razorpay can and cannot demand.
+6. Focus on actionable advice: what documents to submit, what rights the merchant has, what payment aggregators can and cannot demand under RBI directives.
 """
 
 

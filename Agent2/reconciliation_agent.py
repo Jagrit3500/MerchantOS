@@ -9,23 +9,33 @@ from datetime import datetime
 
 # ─── Public Razorpay Fee Rates (source: razorpay.com/pricing) ─────────────────
 # Format: method_key -> (platform_fee_pct, gst_on_fee_pct)
-FEE_RATES: dict[str, tuple[float, float]] = {
-    "upi":          (0.00, 18.0),
-    "card":         (2.00, 18.0),
-    "credit card":  (2.00, 18.0),
-    "credit_card":  (2.00, 18.0),
-    "debit card":   (2.00, 18.0),
-    "debit_card":   (2.00, 18.0),
-    "netbanking":   (1.50, 18.0),
-    "net banking":  (1.50, 18.0),
-    "wallet":       (1.50, 18.0),
-    "emi":          (2.50, 18.0),
-    "paylater":     (2.00, 18.0),
-}
-FEE_DEFAULT = (2.00, 18.0)
+import os
+_gst = float(os.getenv("GST_RATE", "18.0"))
+_mdr_upi = float(os.getenv("MDR_RATE_UPI", "0.00"))
+_mdr_card = float(os.getenv("MDR_RATE_CARD", "2.00"))
+_mdr_netbanking = float(os.getenv("MDR_RATE_NETBANKING", "1.50"))
+_mdr_wallet = float(os.getenv("MDR_RATE_WALLET", "1.50"))
+_mdr_emi = float(os.getenv("MDR_RATE_EMI", "2.50"))
+_mdr_paylater = float(os.getenv("MDR_RATE_PAYLATER", "2.00"))
+_mdr_default = float(os.getenv("MDR_RATE_DEFAULT", "2.00"))
 
-# RBI PA Directions 2025, Para 5.3 - T+2 working days; we check T+3 calendar days
-TAT_CALENDAR_DAYS = 3
+FEE_RATES: dict[str, tuple[float, float]] = {
+    "upi":          (_mdr_upi, _gst),
+    "card":         (_mdr_card, _gst),
+    "credit card":  (_mdr_card, _gst),
+    "credit_card":  (_mdr_card, _gst),
+    "debit card":   (_mdr_card, _gst),
+    "debit_card":   (_mdr_card, _gst),
+    "netbanking":   (_mdr_netbanking, _gst),
+    "net banking":  (_mdr_netbanking, _gst),
+    "wallet":       (_mdr_wallet, _gst),
+    "emi":          (_mdr_emi, _gst),
+    "paylater":     (_mdr_paylater, _gst),
+}
+FEE_DEFAULT = (_mdr_default, _gst)
+
+# RBI PA Directions 2025, Para 5.3 - T+2 working days; configurable calendar days threshold
+TAT_CALENDAR_DAYS = int(os.getenv("TAT_CALENDAR_DAYS", "3"))
 
 # Column name aliases so we accept many CSV formats
 COL_ALIASES: dict[str, list[str]] = {
@@ -47,7 +57,7 @@ REQUIRED_COLS = [
     "settlement_amount", "status", "payment_method",
 ]
 
-INR = "\u20b9"   # Rupee symbol
+INR = os.getenv("MERCHANT_CURRENCY_SYMBOL", "\u20b9")
 
 
 class ReconciliationAgent:
@@ -277,10 +287,11 @@ class ReconciliationAgent:
         s = self.summary
         if not s:
             return "Run analyze() first."
+        agg_short = os.getenv("PAYMENT_AGGREGATOR_SHORT", "Razorpay")
         lines = [
-            "Subject: Settlement Reconciliation Dispute - Missing/Held Funds (Account: [YOUR_MERCHANT_ID])",
+            f"Subject: Settlement Reconciliation Dispute - Missing/Held Funds (Account: [YOUR_MERCHANT_ID])",
             "",
-            "Dear Razorpay Settlements Team,",
+            f"Dear {agg_short} Settlements Team,",
             "",
             "I am formally disputing settlement discrepancies in account [YOUR_MERCHANT_ID].",
             "After reconciling my records, I have identified the following issues:",
@@ -301,7 +312,7 @@ class ReconciliationAgent:
             total_pend = sum(t["amount"] for t in s["pending_funds"])
             lines += [
                 f"{n}. PENDING SETTLEMENTS: {s['pending_count']} transaction(s) totalling {INR}{total_pend:,.2f}",
-                "   Per Razorpay T+2 settlement cycle, these are overdue.",
+                f"   Per {os.getenv('PAYMENT_AGGREGATOR_SHORT', 'Razorpay')} T+2 settlement cycle, these are overdue.",
                 f"   Transaction IDs: {', '.join(t['transaction_id'] for t in s['pending_funds'])}",
                 "",
             ]
@@ -333,12 +344,12 @@ class ReconciliationAgent:
             "  4. A certified reconciliation statement",
             "",
             "If unresolved within 5 business days, I will escalate to:",
-            "  - Razorpay Grievance Officer: grievance.officer@razorpay.com",
+            f"  - {os.getenv('PAYMENT_AGGREGATOR_SHORT', 'Razorpay')} Grievance Officer: {os.getenv('PAYMENT_AGGREGATOR_GRIEVANCE_EMAIL', 'grievance.officer@razorpay.com')}",
             "  - RBI Integrated Ombudsman: https://cms.rbi.org.in",
             "",
             "Merchant ID: [YOUR_MERCHANT_ID]",
             "Registered Email: [YOUR_REGISTERED_EMAIL]",
-            "Date: [DATE]",
+            f"Date: {date.today().strftime('%d %B %Y')}",
             "",
             "Regards,",
             "[YOUR_NAME / BUSINESS NAME]",

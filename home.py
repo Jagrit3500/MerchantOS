@@ -1,330 +1,95 @@
+"""Overview: a working sample ledger and clear entry points into recovery tasks."""
+import importlib
+from pathlib import Path
+
 import streamlit as st
-import os, socket
 
-st.set_page_config(
-    page_title="MerchantOS — Autonomous Compliance & Recovery Command Center",
-    page_icon="🏛️",
-    layout="wide",
-)
+from Agent2.reconciliation_agent import ReconciliationAgent
+import src.ui as _ui
 
-HOST = os.getenv("MERCHANTOS_HOST", "localhost")
-PORT_A1 = os.getenv("PORT_AGENT1", "8502")
-PORT_A2 = os.getenv("PORT_AGENT2", "8503")
-PORT_A3 = os.getenv("PORT_AGENT3", "8504")
+# Streamlit retains imported modules when file watching is disabled.
+importlib.reload(_ui)
+from src.ui import app_urls, badge, esc, footer, hero, icon, inject_theme, metric, nav, panel, section_title
 
-URL_A1 = f"http://{HOST}:{PORT_A1}"
-URL_A2 = f"http://{HOST}:{PORT_A2}"
-URL_A3 = f"http://{HOST}:{PORT_A3}"
+st.set_page_config(page_title="Overview · MerchantOS", page_icon="M", layout="wide", initial_sidebar_state="expanded")
+inject_theme()
+nav("home")
+urls = app_urls()
+hero("THE MERCHANT'S DESK", "Your money. A clearer picture.", "Track settlement exceptions and take the next step toward resolving them.")
 
-def is_port_active(host: str, port_str: str) -> bool:
-    try:
-        port = int(port_str)
-        with socket.create_connection((host, port), timeout=0.2):
-            return True
-    except Exception:
-        return False
+toolbar, action = st.columns([3, 1])
+with toolbar:
+    st.caption("SAMPLE WORKSPACE  /  Figures calculated from the included settlement report")
+with action:
+    st.link_button("Reconcile a report →", urls["agent2"], type="primary", width="stretch")
 
-a1_active = is_port_active(HOST, PORT_A1)
-a2_active = is_port_active(HOST, PORT_A2)
-a3_active = is_port_active(HOST, PORT_A3)
+agent = ReconciliationAgent()
+sample = Path(__file__).parent / "Agent2" / "sample_data" / "sample_settlement.csv"
+if sample.exists():
+    agent.parse_csv(sample.read_text(encoding="utf-8"))
+else:
+    agent.parse_csv("transaction_id,amount,fee,tax,settlement_amount,status,payment_method\n")
+summary = agent.analyze()
+held = sum(t["amount"] for t in summary["held_funds"])
+pending = sum(t["amount"] for t in summary["pending_funds"])
+received = summary["total_settled"]
+gross = summary["total_gross"]
+# The remainder completes the gross ledger without double-counting fees on unpaid rows.
+deducted_from_paid = gross - received - held - pending
 
-st.markdown("""
-<style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
-*,.stApp { font-family: 'Inter', sans-serif; }
-.stApp { background: #060912; color: #e2e8f0; }
+left, right = st.columns([1.05, 1], gap="large")
+with left:
+    st.markdown(f'<div class="overview-total"><div class="label">Awaiting settlement</div><div class="balance-art" aria-hidden="true"><i></i><i></i><i></i><i></i></div><div class="amount">{os.getenv('MERCHANT_CURRENCY_SYMBOL', '₹')}{summary["recovery_amount"]:,.0f}<span>.00</span></div><p>{summary["held_count"] + summary["pending_count"]} transactions to follow up · sample report</p><div class="balance-meta"><div><strong>{os.getenv('MERCHANT_CURRENCY_SYMBOL', '₹')}{held:,.0f}</strong><small>On hold</small></div><div><strong>{os.getenv('MERCHANT_CURRENCY_SYMBOL', '₹')}{pending:,.0f}</strong><small>Pending</small></div><div><strong>{summary["settled_count"]} / {summary["total_transactions"]}</strong><small>Transactions settled</small></div></div></div>', unsafe_allow_html=True)
+with right:
+    with panel("Where the money stands", f"Gross transaction value · {os.getenv('MERCHANT_CURRENCY_SYMBOL', '₹')}{gross:,.2f}"):
+        parts = [("Settled", received, "#315c3b"), ("On hold", held, "#a0b487"), ("Pending", pending, "#dfe89b"), ("Deductions on paid rows", deducted_from_paid, "#e8ece1")]
+        bars = "".join(f'<div style="width:{value / gross * 100:.4f}%;background:{color}" title="{esc(label)}: {os.getenv('MERCHANT_CURRENCY_SYMBOL', '₹')}{value:,.2f}"></div>' for label, value, color in parts)
+        legend = "".join(f'<div><i style="--swatch:{color}"></i><span>{label}<strong>{os.getenv('MERCHANT_CURRENCY_SYMBOL', '₹')}{value:,.2f}</strong></span></div>' for label, value, color in parts)
+        st.markdown(f'<div class="composition"><div class="composition-bar" role="img" aria-label="Breakdown of gross transaction value">{bars}</div><div class="composition-legend">{legend}</div></div>', unsafe_allow_html=True)
 
-.hero {
-    text-align: center; padding: 48px 20px 24px;
-}
-.hero-badge {
-    display: inline-flex; align-items: center; gap: 8px;
-    background: rgba(0, 212, 170, 0.1); color: #00d4aa;
-    border: 1px solid rgba(0, 212, 170, 0.3); border-radius: 24px;
-    padding: 6px 16px; font-size: 12px; font-weight: 700;
-    letter-spacing: 0.8px; text-transform: uppercase; margin-bottom: 16px;
-}
-.hero-title {
-    font-size: 60px; font-weight: 900; letter-spacing: -2.5px;
-    background: linear-gradient(135deg, #00d4aa 0%, #6366f1 50%, #ef4444 100%);
-    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-    line-height: 1.1; margin-bottom: 14px;
-}
-.hero-sub {
-    font-size: 17px; color: #94a3b8; max-width: 720px;
-    margin: 0 auto 32px; line-height: 1.6;
-}
+c1, c2, c3 = st.columns(3, gap="large")
+with c1:
+    metric("Gross processed", f"{os.getenv('MERCHANT_CURRENCY_SYMBOL', '₹')}{gross:,.2f}", f'{summary["total_transactions"]} transactions in this report')
+with c2:
+    metric("Settled to bank", f"{os.getenv('MERCHANT_CURRENCY_SYMBOL', '₹')}{received:,.2f}", f'{summary["settled_count"]} marked as settled')
+with c3:
+    metric("Fee difference", f'{os.getenv('MERCHANT_CURRENCY_SYMBOL', '₹')}{summary["total_overcharge"]:,.2f}', "Charged fees minus configured expected fees")
 
-/* Stat Cards */
-.stat-row {
-    display: flex; gap: 18px; justify-content: center;
-    flex-wrap: wrap; margin-bottom: 40px;
-}
-.stat-pill {
-    background: #0e1424; border: 1px solid #1e293b; border-radius: 20px;
-    padding: 12px 26px; text-align: center; min-width: 140px;
-}
-.stat-num { font-size: 24px; font-weight: 800; }
-.stat-lbl { font-size: 11px; color: #64748b; text-transform: uppercase; letter-spacing: 0.6px; margin-top: 2px; }
+main, aside = st.columns([1.8, 1], gap="large")
+with main:
+    section_title("Settlement activity")
+    filter_col, search_col = st.columns([1, 1.5])
+    selected_status = filter_col.selectbox("Show status", ["All transactions", "Needs attention", "Settled"], label_visibility="collapsed")
+    search = search_col.text_input("Find transaction", placeholder="Search transaction or order ID", label_visibility="collapsed")
+    txns = agent.transactions
+    if selected_status == "Needs attention":
+        txns = [t for t in txns if t["status"] != "settled"]
+    elif selected_status == "Settled":
+        txns = [t for t in txns if t["status"] == "settled"]
+    if search:
+        txns = [t for t in txns if search.lower() in (t["transaction_id"] + " " + t["order_id"]).lower()]
+    rows = []
+    for t in txns[:8]:
+        tone = {"settled": "good", "on_hold": "danger", "pending": "warn"}.get(t["status"], "info")
+        rows.append(f'<tr><td><span class="mono">{esc(t["transaction_id"])}</span></td><td>{badge(t["status"].replace("_", " ").title(), tone)}</td><td class="money">{os.getenv('MERCHANT_CURRENCY_SYMBOL', '₹')}{t["amount"]:,.2f}</td><td>{esc(t["payment_method"])}</td></tr>')
+    if rows:
+        st.markdown('<div class="table-scroll"><table class="data-table"><thead><tr><th>Transaction</th><th>Status</th><th class="money">Gross amount</th><th>Method</th></tr></thead><tbody>' + "".join(rows) + '</tbody></table></div>', unsafe_allow_html=True)
+        st.caption(f"Showing {min(8, len(txns))} of {len(txns)} matching transactions")
+    else:
+        st.info("No transactions match this search.")
+    st.download_button("Export sample audit", agent.export_report_csv(), "sample_audit.csv", "text/csv")
+with aside:
+    section_title("Take the next step")
+    links = [
+        ("agent1", "Understand a fund hold", "A guided check of your account restriction."),
+        ("agent2", "Review your settlements", "Upload a report and inspect the exceptions."),
+        ("agent3", "Prepare an escalation", "Assemble your evidence and correspondence."),
+    ]
+    for key, title, desc in links:
+        st.markdown(f'<a class="action-link" href="{esc(urls[key])}" target="_self"><span>{icon(key)}</span><div><strong>{title}</strong><small>{desc}</small></div>{icon("arrow")}</a>', unsafe_allow_html=True)
+    section_title("Volume by payment method")
+    for method, stats in summary["method_stats"].items():
+        st.markdown(f'<div class="method-row"><span>{esc(method.title())}</span><div class="method-track"><i style="width:{stats["gross"] / gross * 100:.2f}%"></i></div><strong>{os.getenv('MERCHANT_CURRENCY_SYMBOL', '₹')}{stats["gross"]:,.0f}</strong></div>', unsafe_allow_html=True)
 
-/* Agent Cards */
-.agent-card {
-    background: #0d1322; border-radius: 18px; padding: 28px 24px;
-    border: 1px solid #1e293b; position: relative; overflow: hidden;
-    transition: all 0.3s ease; min-height: 340px;
-}
-.agent-card:hover {
-    border-color: #334155; transform: translateY(-3px);
-}
-.agent-card::before {
-    content: ''; position: absolute; top: 0; left: 0; right: 0;
-    height: 4px; border-radius: 18px 18px 0 0;
-}
-.agent-1::before { background: linear-gradient(90deg, #6366f1, #00d4aa); }
-.agent-2::before { background: linear-gradient(90deg, #00d4aa, #10b981); }
-.agent-3::before { background: linear-gradient(90deg, #ef4444, #f59e0b); }
-
-.agent-icon {
-    font-size: 42px; margin-bottom: 14px;
-}
-.agent-title {
-    font-size: 20px; font-weight: 800; color: #f8fafc;
-    margin-bottom: 6px;
-}
-.agent-subtitle {
-    font-size: 12px; text-transform: uppercase; letter-spacing: 0.8px;
-    color: #64748b; margin-bottom: 12px; font-weight: 700;
-}
-.agent-desc {
-    font-size: 13px; color: #94a3b8; line-height: 1.6; margin-bottom: 18px;
-}
-.feature-chip {
-    display: inline-block; background: #131c31; border: 1px solid #23314d;
-    border-radius: 20px; padding: 3px 10px; font-size: 11px; color: #94a3b8;
-    margin: 3px 2px;
-}
-.port-tag {
-    position: absolute; top: 18px; right: 18px;
-    background: #070a13; border: 1px solid #1e293b; border-radius: 8px;
-    padding: 4px 10px; font-size: 11px; font-family: monospace; font-weight: 700;
-}
-.tag-online { color: #10b981; border-color: rgba(16, 185, 129, 0.4); background: rgba(16, 185, 129, 0.08); }
-.tag-offline { color: #f59e0b; border-color: rgba(245, 158, 11, 0.4); background: rgba(245, 158, 11, 0.08); }
-
-/* Link Buttons */
-div[data-testid="stLinkButton"] > a {
-    display: flex !important;
-    justify-content: center !important;
-    align-items: center !important;
-    border-radius: 10px !important;
-    font-weight: 700 !important;
-    font-size: 14px !important;
-    text-decoration: none !important;
-    padding: 13px 20px !important;
-    transition: all 0.25s ease !important;
-    border: none !important;
-}
-div[data-testid="stLinkButton"] > a:hover {
-    transform: translateY(-2px) !important;
-}
-
-.btn-a1 div[data-testid="stLinkButton"] > a {
-    background: linear-gradient(135deg, #3730a3, #6366f1) !important;
-    color: #ffffff !important;
-    box-shadow: 0 4px 16px rgba(99, 102, 241, 0.35) !important;
-}
-.btn-a1 div[data-testid="stLinkButton"] > a:hover {
-    box-shadow: 0 8px 24px rgba(99, 102, 241, 0.6) !important;
-}
-
-.btn-a2 div[data-testid="stLinkButton"] > a {
-    background: linear-gradient(135deg, #065f46, #00d4aa) !important;
-    color: #04120e !important;
-    box-shadow: 0 4px 16px rgba(0, 212, 170, 0.35) !important;
-}
-.btn-a2 div[data-testid="stLinkButton"] > a:hover {
-    box-shadow: 0 8px 24px rgba(0, 212, 170, 0.6) !important;
-}
-
-.btn-a3 div[data-testid="stLinkButton"] > a {
-    background: linear-gradient(135deg, #7f1d1d, #ef4444) !important;
-    color: #ffffff !important;
-    box-shadow: 0 4px 16px rgba(239, 68, 68, 0.35) !important;
-}
-.btn-a3 div[data-testid="stLinkButton"] > a:hover {
-    box-shadow: 0 8px 24px rgba(239, 68, 68, 0.6) !important;
-}
-
-.direct-link {
-    display: block; text-align: center; font-size: 11px;
-    margin-top: 8px; text-decoration: underline; opacity: 0.85;
-}
-.direct-link:hover { opacity: 1.0; }
-</style>
-""", unsafe_allow_html=True)
-
-# Hero
-st.markdown("""
-<div class='hero'>
-  <div class='hero-badge'>⚡ Autonomous Compliance & Settlement Resolution Copilot</div>
-  <div class='hero-title'>MerchantOS</div>
-  <div class='hero-sub'>
-    Unified compliance and settlement resolution copilot for Indian merchants and payment aggregators.
-    Diagnose KYC holds, reconcile settlement deficits, audit fees against published rates, and assemble
-    statutory documentation to unblock cash flow and eliminate support backlogs.
-  </div>
-</div>
-""", unsafe_allow_html=True)
-
-# Headline Callout: Total Trapped Capital
-st.markdown("""
-<div style='background: linear-gradient(135deg, rgba(239,68,68,0.12) 0%, rgba(99,102,241,0.1) 100%);
-     border: 1px solid rgba(239,68,68,0.3); border-radius: 18px; padding: 22px 28px; margin: 0 auto 32px;
-     max-width: 900px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px'>
-  <div>
-    <div style='font-size: 11px; color: #ef4444; text-transform: uppercase; font-weight: 800; letter-spacing: 1px'>
-      🚨 Aggregate Trapped Capital Requiring Action Today
-    </div>
-    <div style='font-size: 38px; font-weight: 900; color: #f8fafc; line-height: 1.1; margin-top: 4px'>
-      ₹94,688<span style='font-size: 18px; color: #94a3b8; font-weight: 500'>.00</span>
-    </div>
-    <div style='font-size: 12px; color: #94a3b8; margin-top: 4px'>
-      Spans: <strong>₹34,200</strong> KYC Holds (Agent 1) + <strong>₹57,500</strong> Settlement Delays & <strong>₹2,988</strong> Fee Variances (Agent 2)
-    </div>
-  </div>
-  <div style='display: flex; gap: 10px;'>
-    <div style='background: rgba(15,23,42,0.8); border: 1px solid #334155; border-radius: 12px; padding: 10px 18px; text-align: center'>
-      <div style='font-size: 18px; font-weight: 800; color: #ef4444'>4</div>
-      <div style='font-size: 10px; color: #64748b; text-transform: uppercase'>Held Txns</div>
-    </div>
-    <div style='background: rgba(15,23,42,0.8); border: 1px solid #334155; border-radius: 12px; padding: 10px 18px; text-align: center'>
-      <div style='font-size: 18px; font-weight: 800; color: #f59e0b'>T+5</div>
-      <div style='font-size: 10px; color: #64748b; text-transform: uppercase'>TAT Breach</div>
-    </div>
-  </div>
-</div>
-""", unsafe_allow_html=True)
-
-# Stats
-st.markdown("""
-<div class='stat-row'>
-  <div class='stat-pill'><div class='stat-num' style='color:#6366f1'>3</div><div class='stat-lbl'>Autonomous AI Agents</div></div>
-  <div class='stat-pill'><div class='stat-num' style='color:#00d4aa'>25+</div><div class='stat-lbl'>RBI Statutory Directions</div></div>
-  <div class='stat-pill'><div class='stat-num' style='color:#ef4444'>4</div><div class='stat-lbl'>Statutory Escalation Tiers</div></div>
-  <div class='stat-pill'><div class='stat-num' style='color:#f59e0b'>100%</div><div class='stat-lbl'>Policy-Driven & Auditable</div></div>
-</div>
-""", unsafe_allow_html=True)
-
-col1, col2, col3 = st.columns(3)
-
-with col1:
-    tag_cls = "tag-online" if a1_active else "tag-offline"
-    status_text = f"● Online (:{PORT_A1})" if a1_active else f"○ Starting (:{PORT_A1})"
-    st.markdown(f"""
-    <div class='agent-card agent-1'>
-      <div class='port-tag {tag_cls}'>{status_text}</div>
-      <div class='agent-icon'>🛡️</div>
-      <div class='agent-subtitle'>Agent 1 &nbsp;|&nbsp; Port {PORT_A1}</div>
-      <div class='agent-title'>KYC & Fund Hold Diagnosis</div>
-      <div class='agent-desc'>
-        Diagnose why your Razorpay account or settlement is paused in 5 interactive steps.
-        Retrieves authoritative RBI clauses and compiles a legally-grounded support ticket.
-      </div>
-      <div>
-        <span class='feature-chip'>RAG Vector Search</span>
-        <span class='feature-chip'>RBI Statutory Citations</span>
-        <span class='feature-chip'>Prohibited Demand Detector</span>
-        <span class='feature-chip'>Ticket Drafter</span>
-      </div>
-    </div>
-    """, unsafe_allow_html=True)
-    st.markdown("<div class='btn-a1'>", unsafe_allow_html=True)
-    st.link_button("🛡️ Launch Agent 1 ↗", url=URL_A1, use_container_width=True)
-    st.markdown("</div>", unsafe_allow_html=True)
-    st.markdown(f"<a class='direct-link' href='{URL_A1}' target='_blank' style='color:#6366f1'>Direct Link: {URL_A1}</a>", unsafe_allow_html=True)
-
-with col2:
-    tag_cls = "tag-online" if a2_active else "tag-offline"
-    status_text = f"● Online (:{PORT_A2})" if a2_active else f"○ Starting (:{PORT_A2})"
-    st.markdown(f"""
-    <div class='agent-card agent-2'>
-      <div class='port-tag {tag_cls}'>{status_text}</div>
-      <div class='agent-icon'>💳</div>
-      <div class='agent-subtitle'>Agent 2 &nbsp;|&nbsp; Port {PORT_A2}</div>
-      <div class='agent-title'>Settlement Reconciliation</div>
-      <div class='agent-desc'>
-        Upload your Razorpay settlement CSV to detect held funds, missing credits,
-        T+2 TAT delays, and fee overcharges exceeding published platform rates.
-      </div>
-      <div>
-        <span class='feature-chip'>CSV Parser</span>
-        <span class='feature-chip'>TAT Delay Detector</span>
-        <span class='feature-chip'>Fee Rate Audit</span>
-        <span class='feature-chip'>Exportable Audit Report</span>
-      </div>
-    </div>
-    """, unsafe_allow_html=True)
-    st.markdown("<div class='btn-a2'>", unsafe_allow_html=True)
-    st.link_button("💳 Launch Agent 2 ↗", url=URL_A2, use_container_width=True)
-    st.markdown("</div>", unsafe_allow_html=True)
-    st.markdown(f"<a class='direct-link' href='{URL_A2}' target='_blank' style='color:#00d4aa'>Direct Link: {URL_A2}</a>", unsafe_allow_html=True)
-
-with col3:
-    tag_cls = "tag-online" if a3_active else "tag-offline"
-    status_text = f"● Online (:{PORT_A3})" if a3_active else f"○ Starting (:{PORT_A3})"
-    st.markdown(f"""
-    <div class='agent-card agent-3'>
-      <div class='port-tag {tag_cls}'>{status_text}</div>
-      <div class='agent-icon'>⚖️</div>
-      <div class='agent-subtitle'>Agent 3 &nbsp;|&nbsp; Port {PORT_A3}</div>
-      <div class='agent-title'>Formal Escalation & Ombudsman</div>
-      <div class='agent-desc'>
-        Escalate beyond customer support. Tracks elapsed dispute days, identifies statutory eligibility,
-        and auto-generates formal Grievance letters, RBI Ombudsman complaints, and Legal notices.
-      </div>
-      <div>
-        <span class='feature-chip'>Grievance Letters</span>
-        <span class='feature-chip'>RBI Ombudsman Filing</span>
-        <span class='feature-chip'>Legal Notice Generator</span>
-        <span class='feature-chip'>Evidence Dossier Checklist</span>
-      </div>
-    </div>
-    """, unsafe_allow_html=True)
-    st.markdown("<div class='btn-a3'>", unsafe_allow_html=True)
-    st.link_button("⚖️ Launch Agent 3 ↗", url=URL_A3, use_container_width=True)
-    st.markdown("</div>", unsafe_allow_html=True)
-    st.markdown(f"<a class='direct-link' href='{URL_A3}' target='_blank' style='color:#ef4444'>Direct Link: {URL_A3}</a>", unsafe_allow_html=True)
-
-st.markdown("---")
-
-st.markdown("### 🗺️ Full Remediation Workflow")
-flow_cols = st.columns(7)
-steps_flow = [
-    ("🛡️ Agent 1", "Diagnose hold cause & check KYC"),
-    ("→", ""),
-    ("💳 Agent 2", "Reconcile CSV & calculate deficit"),
-    ("→", ""),
-    ("⚖️ Agent 3", "Generate formal legal dossier"),
-    ("→", ""),
-    ("🏛️ RBI Ombudsman", "File complaint on cms.rbi.org.in"),
-]
-for col, (icon, label) in zip(flow_cols, steps_flow):
-    with col:
-        if label:
-            st.markdown(f"""
-            <div style='text-align:center;background:#0d1322;border-radius:12px;padding:16px 8px;border:1px solid #1e293b'>
-              <div style='font-size:22px'>{icon}</div>
-              <div style='font-size:12px;color:#94a3b8;margin-top:6px;font-weight:600'>{label}</div>
-            </div>
-            """, unsafe_allow_html=True)
-        else:
-            st.markdown(f"<div style='text-align:center;padding:26px 0;font-size:22px;color:#475569'>{icon}</div>", unsafe_allow_html=True)
-
-st.markdown("<br>", unsafe_allow_html=True)
-st.markdown(
-    "<div style='text-align:center;font-size:12px;color:#475569'>"
-    "MerchantOS — Autonomous Compliance & Settlement Resolution Copilot for Indian Merchants | Adheres to RBI Master Directions on Payment Aggregators 2025 | "
-    "Not legal advice — consult a registered advocate for formal representation"
-    "</div>",
-    unsafe_allow_html=True,
-)
+st.markdown(f'<div class="cta-band"><div><h3>Give every exception a next step.</h3><p>Start with your own report to create a settlement audit and a dispute letter.</p></div><a href="{esc(urls["agent2"])}" target="_self">Start a reconciliation {icon("arrow")}</a></div>', unsafe_allow_html=True)
+footer()

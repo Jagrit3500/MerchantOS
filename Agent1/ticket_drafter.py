@@ -1,5 +1,6 @@
+import os
 """
-Ticket Drafter ? generates a legally-worded support ticket
+Ticket Drafter — generates a legally-worded support ticket
 based on KYCDiagnosisAgent output + RAG evidence.
 """
 from datetime import date
@@ -47,9 +48,9 @@ def draft_ticket(diagnosis: dict, rag_answer: str = "") -> str:
         sla_timeline = "Written acknowledgment within 24 hours per RBI guidelines."
 
     base_templates = {
-        "KYC_WRONG_DOCS": f"""Subject: Settlement Hold ? Incorrect KYC Document Request (Account: [YOUR_MERCHANT_ID])
+        "KYC_WRONG_DOCS": f"""Subject: Settlement Hold — Incorrect KYC Document Request (Account: [YOUR_MERCHANT_ID])
 
-Dear Razorpay Compliance / KYC Team,
+f"Dear {os.getenv('PAYMENT_AGGREGATOR_SHORT', 'Razorpay')} Compliance / KYC Team,"
 
 My account [YOUR_MERCHANT_ID] has been placed on hold. I am registered as a {merchant_type}.
 
@@ -82,9 +83,9 @@ Regards,
 [YOUR_NAME]
 """,
 
-        "KYC_MISSING_DOCS": f"""Subject: Settlement Hold ? KYC Document Submission (Account: [YOUR_MERCHANT_ID])
+        "KYC_MISSING_DOCS": f"""Subject: Settlement Hold — KYC Document Submission (Account: [YOUR_MERCHANT_ID])
 
-Dear Razorpay KYC Team,
+f"Dear {os.getenv('PAYMENT_AGGREGATOR_SHORT', 'Razorpay')} KYC Team,"
 
 My account [YOUR_MERCHANT_ID] is on hold pending KYC verification. I am registered as a {merchant_type}.
 
@@ -109,15 +110,15 @@ Regards,
 [YOUR_NAME]
 """,
 
-        "RISK_TXN_SPIKE": f"""Subject: Settlement Hold ? Clarification on Transaction Volume (Account: [YOUR_MERCHANT_ID])
+        "RISK_TXN_SPIKE": f"""Subject: Settlement Hold — Clarification on Transaction Volume (Account: [YOUR_MERCHANT_ID])
 
-Dear Razorpay Risk Team,
+f"Dear {os.getenv('PAYMENT_AGGREGATOR_SHORT', 'Razorpay')} Risk Team,"
 
 My account [YOUR_MERCHANT_ID] appears to be on hold following an increase in processing volume.
 
 {duration_clause}
 
-I want to formally clarify that this volume increase reflects genuine customer demand due to: [EXPLAIN REASON ? e.g., marketing campaign, seasonal sale, new product launch].
+I want to formally clarify that this volume increase reflects genuine customer demand due to: [EXPLAIN REASON — e.g., marketing campaign, seasonal sale, new product launch].
 
 I am providing the following records to substantiate transaction authenticity:
   - Recent sales invoices confirming legitimate order fulfillment
@@ -136,9 +137,9 @@ Regards,
 [YOUR_NAME]
 """,
 
-        "RISK_CHARGEBACK": f"""Subject: Settlement Hold ? Chargeback & Dispute Remediation (Account: [YOUR_MERCHANT_ID])
+        "RISK_CHARGEBACK": f"""Subject: Settlement Hold — Chargeback & Dispute Remediation (Account: [YOUR_MERCHANT_ID])
 
-Dear Razorpay Risk Team,
+f"Dear {os.getenv('PAYMENT_AGGREGATOR_SHORT', 'Razorpay')} Risk Team,"
 
 My account [YOUR_MERCHANT_ID] is currently restricted regarding dispute and chargeback monitoring.
 
@@ -165,9 +166,9 @@ Regards,
 [YOUR_NAME]
 """,
 
-        "REGULATORY_LEA": f"""Subject: Account Freeze ? Formal Request for Written Notice & Reason (Account: [YOUR_MERCHANT_ID])
+        "REGULATORY_LEA": f"""Subject: Account Freeze — Formal Request for Written Notice & Reason (Account: [YOUR_MERCHANT_ID])
 
-Dear Razorpay Legal & Compliance Directorate,
+f"Dear {os.getenv('PAYMENT_AGGREGATOR_SHORT', 'Razorpay')} Legal & Compliance Directorate,"
 
 My merchant account [YOUR_MERCHANT_ID] has been frozen without formal prior written notification.
 
@@ -205,7 +206,7 @@ Regards,
 
 def get_escalation_path() -> list[dict]:
     return [
-        {"tier": 1, "action": "Submit Razorpay support ticket", "timeline": "Wait 24-48 hours for response"},
-        {"tier": 2, "action": "Escalate to Razorpay Grievance Officer", "timeline": "If no resolution after 5 business days"},
+        {"tier": 1, "action": f"Submit {os.getenv('PAYMENT_AGGREGATOR_SHORT', 'Razorpay')} support ticket", "timeline": "Wait 24-48 hours for response"},
+        {"tier": 2, "action": f"Escalate to {os.getenv('PAYMENT_AGGREGATOR_SHORT', 'Razorpay')} Grievance Officer", "timeline": "If no resolution after 5 business days"},
         {"tier": 3, "action": "File complaint with RBI Integrated Ombudsman", "timeline": "If 30 days pass without resolution", "url": "https://cms.rbi.org.in"},
     ]

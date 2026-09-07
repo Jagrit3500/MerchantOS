@@ -1,4 +1,4 @@
-﻿"""
+"""
 Ingest RBI + Razorpay documents into ChromaDB for Agent 1.
 Handles both .pdf and .txt files in the /docs folder.
 Uses source-prefixed chunk IDs to prevent duplicates across multiple docs.
@@ -116,7 +116,7 @@ def ingest_all():
         for s in sources:
             count = sum(1 for c in all_chunks if c["source"] == s)
             print(f"  - {s}: {count} chunks")
-        print("\nRun: streamlit run home.py")
+        print("\nRun: python launch.py (or streamlit run home.py)")
     else:
         print("\nEmbedding failed.")
     return success

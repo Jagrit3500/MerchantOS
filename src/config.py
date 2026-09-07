@@ -1,7 +1,3 @@
-﻿"""
-MerchantOS Configuration
-All paths are ABSOLUTE based on project root - works regardless of working directory.
-"""
 import os
 from dotenv import load_dotenv
 
@@ -14,8 +10,33 @@ load_dotenv(ENV_PATH, override=True)
 os.environ["TRANSFORMERS_OFFLINE"] = os.getenv("TRANSFORMERS_OFFLINE", "1")
 os.environ["HF_DATASETS_OFFLINE"]  = os.getenv("HF_DATASETS_OFFLINE", "1")
 
+# Networking & Service Ports
+HOST = os.getenv("MERCHANTOS_HOST", "localhost")
+PORT_HOME = int(os.getenv("PORT_HOME", "8501"))
+PORT_AGENT1 = int(os.getenv("PORT_AGENT1", "8502"))
+PORT_AGENT2 = int(os.getenv("PORT_AGENT2", "8503"))
+PORT_AGENT3 = int(os.getenv("PORT_AGENT3", "8504"))
+
+# Workspace & Entity Metadata
+WORKSPACE_NAME = os.getenv("MERCHANT_WORKSPACE_NAME", "Merchant workspace")
+CURRENCY = os.getenv("MERCHANT_CURRENCY", "INR")
+AGGREGATOR_NAME = os.getenv("PAYMENT_AGGREGATOR_NAME", "Razorpay Software Private Limited")
+AGGREGATOR_SHORT = os.getenv("PAYMENT_AGGREGATOR_SHORT", "Razorpay")
+AGGREGATOR_GRIEVANCE_EMAIL = os.getenv("PAYMENT_AGGREGATOR_GRIEVANCE_EMAIL", "grievance.officer@razorpay.com")
+
+# Dynamic Fee & Tax Settings
+MDR_RATE_UPI = float(os.getenv("MDR_RATE_UPI", "0.0"))
+MDR_RATE_CARD = float(os.getenv("MDR_RATE_CARD", "2.0"))
+MDR_RATE_NETBANKING = float(os.getenv("MDR_RATE_NETBANKING", "2.0"))
+MDR_RATE_WALLET = float(os.getenv("MDR_RATE_WALLET", "2.0"))
+MDR_RATE_EMI = float(os.getenv("MDR_RATE_EMI", "2.5"))
+MDR_RATE_PAYLATER = float(os.getenv("MDR_RATE_PAYLATER", "2.5"))
+MDR_RATE_DEFAULT = float(os.getenv("MDR_RATE_DEFAULT", "2.0"))
+GST_RATE = float(os.getenv("GST_RATE", "18.0"))
+
 # API Keys
 GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 
 # LLM Settings
 GROQ_MODEL   = os.getenv("GROQ_MODEL", "llama-3.1-8b-instant")
@@ -62,8 +83,6 @@ if __name__ == "__main__":
     print(f"  PROJECT_ROOT:    {PROJECT_ROOT}")
     print(f"  ENV_PATH:        {ENV_PATH} | exists={os.path.exists(ENV_PATH)}")
     print(f"  CHROMA_DB_PATH:  {CHROMA_DB_PATH} | exists={os.path.exists(CHROMA_DB_PATH)}")
-    print(f"  GROQ_API_KEY:    {'SET' if GROQ_API_KEY else 'MISSING'}")
-    print(f"  GROQ_MODEL:      {GROQ_MODEL}")
-    print(f"  EMBEDDING_MODEL: {EMBEDDING_MODEL}")
-    print(f"  SIMILARITY_THRESHOLD: {SIMILARITY_THRESHOLD}")
-    print(f"  TOP_K_RESULTS:   {TOP_K_RESULTS}")
+    print(f"  HOST & PORTS:    {HOST} -> Home:{PORT_HOME}, A1:{PORT_AGENT1}, A2:{PORT_AGENT2}, A3:{PORT_AGENT3}")
+    print(f"  AGGREGATOR:      {AGGREGATOR_NAME} ({AGGREGATOR_SHORT})")
+    print(f"  WORKSPACE:       {WORKSPACE_NAME} [{CURRENCY}]")

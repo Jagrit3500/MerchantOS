@@ -6,23 +6,29 @@ from __future__ import annotations
 from datetime import date, datetime, timedelta
 
 # ─── Escalation tiers (RBI / Consumer Protection Act based) ───────────────────
+import os
+_agg_name = os.getenv("PAYMENT_AGGREGATOR_NAME", "Razorpay Software Private Limited")
+_agg_short = os.getenv("PAYMENT_AGGREGATOR_SHORT", "Razorpay")
+_grievance_email = os.getenv("PAYMENT_AGGREGATOR_GRIEVANCE_EMAIL", "grievance.officer@razorpay.com")
+_support_url = os.getenv("PAYMENT_AGGREGATOR_SUPPORT_URL", "razorpay.com/support")
+
 ESCALATION_TIERS = [
     {
         "tier": 1,
-        "name": "Razorpay Support",
+        "name": f"{_agg_short} Support",
         "trigger_days": 0,
         "deadline_days": 5,
-        "description": "First point of contact. File via razorpay.com/support or in-app chat.",
-        "contact": "razorpay.com/support",
+        "description": f"First point of contact. File via {_support_url} or in-app chat.",
+        "contact": _support_url,
         "rbi_ref": None,
     },
     {
         "tier": 2,
-        "name": "Razorpay Grievance Officer",
+        "name": f"{_agg_short} Grievance Officer",
         "trigger_days": 5,
         "deadline_days": 30,
-        "description": "If not resolved within 5 business days, escalate to Grievance Officer.",
-        "contact": "grievance.officer@razorpay.com",
+        "description": f"If not resolved within 5 business days, escalate to {_agg_short} Grievance Officer.",
+        "contact": _grievance_email,
         "rbi_ref": "RBI PA Directions 2025, Para 8 - Grievance Redressal",
     },
     {
@@ -71,39 +77,39 @@ ISSUE_RBI_REFS = {
 # ─── Evidence checklist per issue type ─────────────────────────────────────────
 EVIDENCE_CHECKLIST = {
     "kyc_hold": [
-        "Screenshot of Razorpay dashboard showing the hold",
+        f"Screenshot of {_agg_short} dashboard showing the hold",
         "All KYC documents you submitted (PAN, Aadhaar, business registration)",
-        "Email from Razorpay requesting documents (if any)",
+        f"Email from {_agg_short} requesting documents (if any)",
         "Email showing you submitted the documents",
         "Date you first noticed the hold",
     ],
     "settlement_hold": [
-        "Screenshot of Razorpay settlement dashboard showing held status",
+        f"Screenshot of {_agg_short} settlement dashboard showing held status",
         "Transaction IDs of all held transactions",
         "Bank statement showing expected but missing credits",
-        "Any emails from Razorpay explaining the hold",
+        f"Any emails from {_agg_short} explaining the hold",
         "Your own order fulfillment records (delivery proof, invoices)",
     ],
     "settlement_missing": [
-        "Razorpay settlement report / CSV download",
+        f"{_agg_short} settlement report / CSV download",
         "Bank statement for the relevant period",
         "List of transaction IDs with expected settlement dates",
-        "Any Razorpay communication about settlement",
+        f"Any {_agg_short} communication about settlement",
     ],
     "fee_overcharge": [
-        "Razorpay settlement CSV with fee details",
-        "Razorpay published pricing at time of transactions",
+        f"{_agg_short} settlement CSV with fee details",
+        f"{_agg_short} published pricing at time of transactions",
         "Your own reconciliation showing overcharge calculation",
         "Transaction IDs where overcharge occurred",
     ],
     "tat_violation": [
-        "Razorpay settlement CSV showing transaction dates and settlement dates",
+        f"{_agg_short} settlement CSV showing transaction dates and settlement dates",
         "Calculation showing days between transaction and settlement",
         "Transaction IDs that exceeded T+2",
     ],
     "account_suspended": [
         "Screenshot of account suspension notice",
-        "Any email from Razorpay explaining suspension reason",
+        f"Any email from {_agg_short} explaining suspension reason",
         "All previously submitted KYC documents",
         "Business registration / license documents",
     ],
@@ -112,17 +118,17 @@ EVIDENCE_CHECKLIST = {
         "Proof of delivery / fulfillment",
         "Customer communication records",
         "Refund policy (if applicable)",
-        "Razorpay chargeback notification email",
+        f"{_agg_short} chargeback notification email",
     ],
     "other": [
         "All relevant screenshots",
-        "Email communication with Razorpay",
+        f"Email communication with {_agg_short}",
         "Transaction IDs / Order IDs affected",
         "Timeline of events (dates and what happened)",
     ],
 }
 
-INR = "\u20b9"
+INR = os.getenv("MERCHANT_CURRENCY_SYMBOL", "\u20b9")
 
 
 class EscalationAgent:
@@ -156,9 +162,9 @@ class EscalationAgent:
         lines = [
             f"To,",
             f"The Grievance Officer",
-            f"Razorpay Software Private Limited",
+            f"{_agg_name}",
             f"1st Floor, SJR Cyber, 22 Laskar Hosur Road, Bengaluru - 560030",
-            f"Email: grievance.officer@razorpay.com",
+            f"Email: {_grievance_email}",
             f"",
             f"Date: {date.today().strftime('%d %B %Y')}",
             f"",
@@ -167,7 +173,7 @@ class EscalationAgent:
             f"Dear Grievance Officer,",
             f"",
             f"I, {merchant['name']}, operating as {merchant['business_name']}, am writing to formally",
-            f"escalate an unresolved issue with my Razorpay merchant account (ID: {merchant['merchant_id']}).",
+            f"escalate an unresolved issue with my {_agg_short} merchant account (ID: {merchant['merchant_id']}).",
             f"",
             f"ISSUE DETAILS:",
             f"  Type: {issue_name}",
@@ -185,7 +191,7 @@ class EscalationAgent:
             f"REGULATORY BASIS:",
             f"  Per {rbi_ref}, I am entitled to a written",
             f"  explanation and resolution within the stipulated timeline.",
-            f"  Per RBI PA Directions 2025, Para 8, Razorpay is obligated to",
+            f"  Per RBI PA Directions 2025, Para 8, {_agg_short} is obligated to",
             f"  resolve grievances within 30 days of receipt.",
             f"",
             f"MY REQUEST:",
@@ -234,7 +240,7 @@ class EscalationAgent:
             f"  State:           {merchant.get('state', '[YOUR STATE]')}",
             f"",
             f"SECTION B - PAYMENT AGGREGATOR DETAILS",
-            f"  Name:    Razorpay Software Private Limited",
+            f"  Name:    {_agg_name}",
             f"  Type:    Payment Aggregator (RBI Licensed)",
             f"  CIN:     U72200KA2013PTC069276",
             f"  Address: 1st Floor, SJR Cyber, 22 Laskar Hosur Road, Bengaluru - 560030",
@@ -250,7 +256,7 @@ class EscalationAgent:
             f"",
             f"  {issue.get('description', '[Describe the issue in detail]')}",
             f"",
-            f"  Despite multiple follow-ups, Razorpay has not resolved this issue.",
+            f"  Despite multiple follow-ups, {_agg_short} has not resolved this issue.",
             f"  The issue has been pending for {issue['days_elapsed']} days, exceeding",
             f"  the 30-day resolution timeline mandated by the RBI.",
             f"",
@@ -261,12 +267,12 @@ class EscalationAgent:
             f"",
             f"SECTION F - RELIEF SOUGHT",
             f"  1. Release of held/missing funds: {INR}{issue.get('amount', 'N/A')}",
-            f"  2. Written explanation from Razorpay citing specific RBI provision",
+            f"  2. Written explanation from {_agg_short} citing specific RBI provision",
             f"  3. Compensation for loss of business during the dispute period",
-            f"  4. Penalty on Razorpay for violation of RBI directives",
+            f"  4. Penalty on {_agg_short} for violation of RBI directives",
             f"",
             f"SECTION G - GRIEVANCE HISTORY",
-            f"  1. First contacted Razorpay Support on: {issue['first_reported_date']}",
+            f"  1. First contacted {_agg_short} Support on: {issue['first_reported_date']}",
         ]
         if issue.get("grievance_ref"):
             lines.append(f"  2. Escalated to Grievance Officer - Ref: {issue['grievance_ref']}")
@@ -304,7 +310,7 @@ class EscalationAgent:
             f"",
             f"TO:",
             f"  The Managing Director & CEO",
-            f"  Razorpay Software Private Limited",
+            f"  {_agg_name}",
             f"  1st Floor, SJR Cyber, 22 Laskar Hosur Road",
             f"  Bengaluru - 560030, Karnataka",
             f"",
@@ -345,28 +351,29 @@ if __name__ == "__main__":
     agent = EscalationAgent()
     # Quick self-test
     merchant = {
-        "name": "Rahul Sharma",
-        "business_name": "ShopEasy Pvt Ltd",
-        "merchant_id": "MERCH_TEST_001",
-        "email": "rahul@shopeasy.in",
-        "phone": "9999999999",
-        "state": "Maharashtra",
-        "address": "123, Test Street, Mumbai - 400001",
+        "name": os.getenv("TEST_MERCHANT_NAME", "Merchant Contact"),
+        "business_name": os.getenv("TEST_BUSINESS_NAME", "Merchant Store Ltd"),
+        "merchant_id": os.getenv("TEST_MERCHANT_ID", "MERCH_001"),
+        "email": os.getenv("TEST_MERCHANT_EMAIL", "merchant@example.com"),
+        "phone": os.getenv("TEST_MERCHANT_PHONE", "9999999999"),
+        "state": os.getenv("TEST_MERCHANT_STATE", "Maharashtra"),
+        "address": os.getenv("TEST_MERCHANT_ADDRESS", "123 Commercial Hub, Mumbai - 400001"),
     }
+    today = date.today()
     issue = {
         "issue_type": "settlement_hold",
-        "first_reported_date": "2024-01-01",
-        "days_elapsed": 45,
+        "first_reported_date": (today - timedelta(days=35)).strftime("%Y-%m-%d"),
+        "days_elapsed": 35,
         "amount": "25,000.00",
-        "txn_ids": "RZP_001, RZP_002",
-        "description": "Settlement of 2 transactions held without explanation for 45 days.",
+        "txn_ids": "TXN_001, TXN_002",
+        "description": "Settlement of 2 transactions held without explanation.",
         "timeline": [
-            "2024-01-01: Noticed settlement not received",
-            "2024-01-03: Raised support ticket",
-            "2024-01-15: No response - escalated to Grievance Officer",
-            "2024-02-15: Still unresolved",
+            f"{(today - timedelta(days=35)):%Y-%m-%d}: Noticed settlement not received",
+            f"{(today - timedelta(days=33)):%Y-%m-%d}: Raised support ticket",
+            f"{(today - timedelta(days=15)):%Y-%m-%d}: No response - escalated to Grievance Officer",
+            f"{(today - timedelta(days=2)):%Y-%m-%d}: Still unresolved",
         ],
-        "grievance_ref": "GRV_20240115_001",
+        "grievance_ref": f"GRV_{(today - timedelta(days=15)):%Y%m%d}_001",
     }
     rec = agent.recommend_tier(45)
     print(f"Recommended tier: {rec['tier']} - {rec['name']}")

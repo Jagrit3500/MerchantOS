@@ -26,9 +26,12 @@ def validate_citations(answer: str, chunks: list[dict]) -> dict:
     """
     Validate that cited pages actually exist in retrieved chunks.
     """
-    refusal = "I could not find this information in the uploaded PDF."
-
-    if refusal in answer:
+    refusals = [
+        "I could not find this information in the uploaded PDF.",
+        "I could not find this information in the knowledge base.",
+        "No relevant information found in the knowledge base."
+    ]
+    if any(r.lower() in answer.lower() for r in refusals):
         return {
             "is_valid": True,
             "is_refusal": True,
