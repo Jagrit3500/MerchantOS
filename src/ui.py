@@ -56,7 +56,9 @@ def nav(active: str) -> None:
             st.caption("KYC: identify a restriction and prepare documents. Reconciliation: inspect a payout report. Escalation: assemble correspondence from your case details.")
         st.markdown('<div class="rail-bottom"><span class="small-mark">M</span><span>MerchantOS<br><small>Payment operations</small></span></div>', unsafe_allow_html=True)
     label = dict(items)[active]
-    st.markdown(f'<div class="topline"><div>Workspace <span>/</span> <strong>{label}</strong></div><div class="topline-meta"><span class="currency">' + esc(os.getenv("MERCHANT_CURRENCY", "INR")) + '</span><span>{date.today():%d %b %Y}</span></div></div>', unsafe_allow_html=True)
+    curr = esc(os.getenv("MERCHANT_CURRENCY", "INR"))
+    dt_str = f"{date.today():%d %b %Y}"
+    st.markdown(f'<div class="topline"><div>Workspace <span>/</span> <strong>{label}</strong></div><div class="topline-meta"><span class="currency">{curr}</span><span>{dt_str}</span></div></div>', unsafe_allow_html=True)
 
 
 def hero(eyebrow: str, title: str, description: str) -> None:
@@ -95,5 +97,5 @@ def note(title: str, body: str) -> None:
     st.markdown(f'<aside class="context-note"><span class="note-star">✳</span><h3>{esc(title)}</h3><p>{esc(body)}</p></aside>', unsafe_allow_html=True)
 
 
-def footer() -> None:
+def footer(*args, **kwargs) -> None:
     st.markdown('<div class="page-footer"><span>merchantos <span class="footer-dot">/</span> Made for merchant operations</span><span>Guidance, not legal representation</span></div>', unsafe_allow_html=True)
