@@ -60,179 +60,179 @@ total_trapped = kyc_hold_amount + recovery_agent2
 held_txns_count = summary.get("held_count", 0) + summary.get("pending_count", 0)
 
 # ─── CSS Styles (Luminous Pearl & 3D Glass White Theme) ───────────────────────
-st.markdown(f"""
+st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
-*,.stApp {{ font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif; }}
-.stApp {{
+*,.stApp { font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif; }
+.stApp {
     background: radial-gradient(ellipse at 15% 0%, rgba(99, 102, 241, 0.08) 0%, rgba(248, 250, 252, 0) 50%),
                 radial-gradient(ellipse at 85% 15%, rgba(16, 185, 129, 0.07) 0%, rgba(248, 250, 252, 0) 50%),
                 radial-gradient(ellipse at 50% 60%, rgba(244, 63, 94, 0.04) 0%, rgba(248, 250, 252, 0) 60%),
                 #f8fafc !important;
     color: #0f172a !important;
-}}
+}
 
 /* Top Bar */
-.top-bar {{
+.top-bar {
     display: flex; justify-content: space-between; align-items: center;
     padding: 12px 22px; background: rgba(255, 255, 255, 0.88);
     border: 1px solid rgba(226, 232, 240, 0.9); border-radius: 16px;
     margin-bottom: 28px; backdrop-filter: blur(20px);
     box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.04), inset 0 1px 0 #ffffff;
-}}
-.top-bar-left {{
+}
+.top-bar-left {
     display: flex; align-items: center; gap: 10px; font-size: 13px; color: #475569; font-weight: 500;
-}}
-.top-bar-left strong {{ color: #0f172a; font-weight: 700; }}
-.top-bar-badge {{
+}
+.top-bar-left strong { color: #0f172a; font-weight: 700; }
+.top-bar-badge {
     background: #eef2ff; color: #4f46e5;
     border: 1px solid rgba(99, 102, 241, 0.25); border-radius: 8px;
     padding: 3px 10px; font-size: 11px; font-weight: 800; letter-spacing: 0.5px;
     box-shadow: 0 0 12px rgba(99, 102, 241, 0.15);
-}}
-.top-bar-right {{
+}
+.top-bar-right {
     font-size: 12px; color: #64748b; font-family: 'JetBrains Mono', monospace; font-weight: 500;
-}}
+}
 
 /* Hero Section */
-.hero {{
+.hero {
     text-align: center; padding: 32px 20px 20px; position: relative;
-}}
-.hero-badge {{
+}
+.hero-badge {
     display: inline-flex; align-items: center; gap: 8px;
     background: #ffffff; color: #4f46e5;
     border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 24px;
     padding: 6px 18px; font-size: 12px; font-weight: 800;
     letter-spacing: 0.8px; text-transform: uppercase; margin-bottom: 18px;
     box-shadow: 0 4px 16px rgba(99, 102, 241, 0.12), inset 0 1px 0 #ffffff;
-}}
-.hero-title {{
+}
+.hero-title {
     font-size: 64px; font-weight: 900; letter-spacing: -2.5px;
     background: linear-gradient(135deg, #0f172a 0%, #3730a3 50%, #4f46e5 100%);
     -webkit-background-clip: text; -webkit-text-fill-color: transparent;
     line-height: 1.1; margin-bottom: 16px;
     filter: drop-shadow(0 4px 16px rgba(99, 102, 241, 0.12));
-}}
-.hero-sub {{
+}
+.hero-sub {
     font-size: 16px; color: #475569; max-width: 780px;
     margin: 0 auto 34px; line-height: 1.65;
-}}
+}
 
 /* Headline Callout: Total Trapped Capital (3D Luminous Pearl) */
-.trapped-box {{
+.trapped-box {
     background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 241, 242, 0.6) 100%);
     border: 1px solid rgba(244, 63, 94, 0.3); border-radius: 22px; padding: 26px 34px; margin: 0 auto 38px;
     max-width: 980px; display: flex; justify-content: space-between; align-items: center;
     flex-wrap: wrap; gap: 20px; backdrop-filter: blur(24px);
     box-shadow: 0 14px 36px -4px rgba(244, 63, 94, 0.12), 0 0 24px rgba(244, 63, 94, 0.08), inset 0 1px 0 #ffffff;
     position: relative; overflow: hidden;
-}}
-.trapped-box::before {{
+}
+.trapped-box::before {
     content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px;
     background: linear-gradient(90deg, #f43f5e 0%, #fb7185 50%, #f59e0b 100%);
     box-shadow: 0 0 12px rgba(244, 63, 94, 0.5);
-}}
-.trapped-title {{
+}
+.trapped-title {
     font-size: 12px; color: #e11d48; text-transform: uppercase; font-weight: 800; letter-spacing: 1.2px;
-}}
-.trapped-amount {{
+}
+.trapped-amount {
     font-size: 46px; font-weight: 900; color: #0f172a; line-height: 1.1; margin-top: 4px;
     font-family: 'JetBrains Mono', monospace; font-variant-numeric: tabular-nums;
-}}
-.trapped-sub {{
+}
+.trapped-sub {
     font-size: 13px; color: #475569; margin-top: 8px; font-weight: 500;
-}}
-.trapped-badges {{
+}
+.trapped-badges {
     display: flex; gap: 14px;
-}}
-.trapped-pill {{
+}
+.trapped-pill {
     background: #ffffff; border: 1px solid rgba(226, 232, 240, 0.9); border-radius: 14px;
     padding: 14px 22px; text-align: center; min-width: 100px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03), inset 0 1px 0 #ffffff;
-}}
+}
 
 /* Stat Pills */
-.stat-row {{
+.stat-row {
     display: flex; gap: 18px; justify-content: center;
     flex-wrap: wrap; margin-bottom: 40px;
-}}
-.stat-pill {{
+}
+.stat-pill {
     background: #ffffff; border: 1px solid rgba(226, 232, 240, 0.9); border-radius: 18px;
     padding: 16px 28px; text-align: center; min-width: 160px;
     box-shadow: 0 4px 14px rgba(15, 23, 42, 0.03), inset 0 1px 0 #ffffff;
     transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-}}
-.stat-pill:hover {{
+}
+.stat-pill:hover {
     transform: translateY(-3px); border-color: rgba(99, 102, 241, 0.3);
     box-shadow: 0 10px 24px -2px rgba(99, 102, 241, 0.12), inset 0 1px 0 #ffffff;
-}}
-.stat-num {{ font-size: 28px; font-weight: 800; font-family: 'JetBrains Mono', monospace; }}
-.stat-lbl {{ font-size: 11px; color: #64748b; text-transform: uppercase; letter-spacing: 0.6px; margin-top: 4px; font-weight: 700; }}
+}
+.stat-num { font-size: 28px; font-weight: 800; font-family: 'JetBrains Mono', monospace; }
+.stat-lbl { font-size: 11px; color: #64748b; text-transform: uppercase; letter-spacing: 0.6px; margin-top: 4px; font-weight: 700; }
 
 /* Agent Cards (3D Luminous Pearl) */
-.agent-card {{
+.agent-card {
     background: rgba(255, 255, 255, 0.92); border-radius: 22px; padding: 32px 28px;
     border: 1px solid rgba(226, 232, 240, 0.9); position: relative; overflow: hidden;
     transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1); min-height: 350px; margin-bottom: 14px;
     display: flex; flex-direction: column; backdrop-filter: blur(20px);
     box-shadow: 0 10px 30px -4px rgba(15, 23, 42, 0.05), inset 0 1px 0 #ffffff;
-}}
-.agent-card:hover {{
+}
+.agent-card:hover {
     transform: translateY(-5px);
     box-shadow: 0 18px 40px -4px rgba(15, 23, 42, 0.1), inset 0 1px 0 #ffffff;
-}}
-.agent-1:hover {{
+}
+.agent-1:hover {
     border-color: rgba(99, 102, 241, 0.4);
     box-shadow: 0 18px 40px -4px rgba(99, 102, 241, 0.15), 0 0 20px rgba(99, 102, 241, 0.1), inset 0 1px 0 #ffffff;
-}}
-.agent-2:hover {{
+}
+.agent-2:hover {
     border-color: rgba(16, 185, 129, 0.4);
     box-shadow: 0 18px 40px -4px rgba(16, 185, 129, 0.15), 0 0 20px rgba(16, 185, 129, 0.1), inset 0 1px 0 #ffffff;
-}}
-.agent-3:hover {{
+}
+.agent-3:hover {
     border-color: rgba(244, 63, 94, 0.4);
     box-shadow: 0 18px 40px -4px rgba(244, 63, 94, 0.15), 0 0 20px rgba(244, 63, 94, 0.1), inset 0 1px 0 #ffffff;
-}}
-.agent-card::before {{
+}
+.agent-card::before {
     content: ''; position: absolute; top: 0; left: 0; right: 0;
     height: 5px; border-radius: 22px 22px 0 0;
-}}
-.agent-1::before {{
+}
+.agent-1::before {
     background: linear-gradient(90deg, #6366f1 0%, #06b6d4 100%);
     box-shadow: 0 2px 10px rgba(99, 102, 241, 0.4);
-}}
-.agent-2::before {{
+}
+.agent-2::before {
     background: linear-gradient(90deg, #059669 0%, #10b981 100%);
     box-shadow: 0 2px 10px rgba(16, 185, 129, 0.4);
-}}
-.agent-3::before {{
+}
+.agent-3::before {
     background: linear-gradient(90deg, #e11d48 0%, #f59e0b 100%);
     box-shadow: 0 2px 10px rgba(244, 63, 94, 0.4);
-}}
+}
 
-.agent-icon {{ font-size: 44px; margin-bottom: 16px; line-height: 1.2; }}
-.agent-title {{ font-size: 21px; font-weight: 800; color: #0f172a; margin-bottom: 6px; letter-spacing: -0.5px; }}
-.agent-subtitle {{ font-size: 11px; text-transform: uppercase; letter-spacing: 0.8px; color: #64748b; margin-bottom: 12px; font-weight: 700; }}
-.agent-desc {{ font-size: 13px; color: #475569; line-height: 1.6; margin-bottom: 20px; flex-grow: 1; }}
+.agent-icon { font-size: 44px; margin-bottom: 16px; line-height: 1.2; }
+.agent-title { font-size: 21px; font-weight: 800; color: #0f172a; margin-bottom: 6px; letter-spacing: -0.5px; }
+.agent-subtitle { font-size: 11px; text-transform: uppercase; letter-spacing: 0.8px; color: #64748b; margin-bottom: 12px; font-weight: 700; }
+.agent-desc { font-size: 13px; color: #475569; line-height: 1.6; margin-bottom: 20px; flex-grow: 1; }
 
-.feature-chip {{
+.feature-chip {
     display: inline-block; background: #f8fafc; border: 1px solid #e2e8f0;
     border-radius: 20px; padding: 4px 11px; font-size: 11px; color: #475569;
     font-weight: 600; margin: 3px 2px; box-shadow: 0 1px 3px rgba(0,0,0,0.02);
-}}
-.port-tag {{
+}
+.port-tag {
     position: absolute; top: 22px; right: 22px;
     border-radius: 10px; padding: 5px 12px; font-size: 11px;
     font-family: 'JetBrains Mono', monospace; font-weight: 700;
-}}
-.tag-online {{
+}
+.tag-online {
     color: #059669; border: 1px solid rgba(16, 185, 129, 0.3); background: #ecfdf5;
     box-shadow: 0 0 10px rgba(16, 185, 129, 0.15);
-}}
-.tag-offline {{
+}
+.tag-offline {
     color: #d97706; border: 1px solid rgba(245, 158, 11, 0.3); background: #fffbeb;
     box-shadow: 0 0 10px rgba(245, 158, 11, 0.15);
-}}
+}
 
 /* Link Buttons */
 
