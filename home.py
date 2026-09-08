@@ -59,31 +59,39 @@ settled_to_bank = summary.get("total_settled", 0.0)
 total_trapped = kyc_hold_amount + recovery_agent2
 held_txns_count = summary.get("held_count", 0) + summary.get("pending_count", 0)
 
-# ─── CSS Styles (Dark Fintech Command Center) ─────────────────────────────────
+# ─── CSS Styles (Luminous Pearl & 3D Glass White Theme) ───────────────────────
 st.markdown(f"""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
-*,.stApp {{ font-family: 'Inter', sans-serif; }}
-.stApp {{ background: #060912; color: #e2e8f0; }}
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+*,.stApp {{ font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif; }}
+.stApp {{
+    background: radial-gradient(ellipse at 15% 0%, rgba(99, 102, 241, 0.08) 0%, rgba(248, 250, 252, 0) 50%),
+                radial-gradient(ellipse at 85% 15%, rgba(16, 185, 129, 0.07) 0%, rgba(248, 250, 252, 0) 50%),
+                radial-gradient(ellipse at 50% 60%, rgba(244, 63, 94, 0.04) 0%, rgba(248, 250, 252, 0) 60%),
+                #f8fafc !important;
+    color: #0f172a !important;
+}}
 
 /* Top Bar */
 .top-bar {{
     display: flex; justify-content: space-between; align-items: center;
-    padding: 10px 18px; background: rgba(13, 19, 34, 0.75);
-    border: 1px solid rgba(30, 41, 59, 0.8); border-radius: 12px;
-    margin-bottom: 24px; backdrop-filter: blur(12px);
+    padding: 12px 22px; background: rgba(255, 255, 255, 0.88);
+    border: 1px solid rgba(226, 232, 240, 0.9); border-radius: 16px;
+    margin-bottom: 28px; backdrop-filter: blur(20px);
+    box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.04), inset 0 1px 0 #ffffff;
 }}
 .top-bar-left {{
-    display: flex; align-items: center; gap: 10px; font-size: 13px; color: #94a3b8;
+    display: flex; align-items: center; gap: 10px; font-size: 13px; color: #475569; font-weight: 500;
 }}
-.top-bar-left strong {{ color: #f8fafc; }}
+.top-bar-left strong {{ color: #0f172a; font-weight: 700; }}
 .top-bar-badge {{
-    background: rgba(0, 212, 170, 0.12); color: #00d4aa;
-    border: 1px solid rgba(0, 212, 170, 0.3); border-radius: 6px;
-    padding: 2px 8px; font-size: 11px; font-weight: 700;
+    background: #eef2ff; color: #4f46e5;
+    border: 1px solid rgba(99, 102, 241, 0.25); border-radius: 8px;
+    padding: 3px 10px; font-size: 11px; font-weight: 800; letter-spacing: 0.5px;
+    box-shadow: 0 0 12px rgba(99, 102, 241, 0.15);
 }}
 .top-bar-right {{
-    font-size: 12px; color: #64748b; font-family: monospace;
+    font-size: 12px; color: #64748b; font-family: 'JetBrains Mono', monospace; font-weight: 500;
 }}
 
 /* Hero Section */
@@ -92,47 +100,55 @@ st.markdown(f"""
 }}
 .hero-badge {{
     display: inline-flex; align-items: center; gap: 8px;
-    background: rgba(0, 212, 170, 0.1); color: #00d4aa;
-    border: 1px solid rgba(0, 212, 170, 0.35); border-radius: 24px;
-    padding: 6px 18px; font-size: 12px; font-weight: 700;
-    letter-spacing: 0.8px; text-transform: uppercase; margin-bottom: 16px;
-    box-shadow: 0 0 20px rgba(0, 212, 170, 0.15);
+    background: #ffffff; color: #4f46e5;
+    border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 24px;
+    padding: 6px 18px; font-size: 12px; font-weight: 800;
+    letter-spacing: 0.8px; text-transform: uppercase; margin-bottom: 18px;
+    box-shadow: 0 4px 16px rgba(99, 102, 241, 0.12), inset 0 1px 0 #ffffff;
 }}
 .hero-title {{
     font-size: 64px; font-weight: 900; letter-spacing: -2.5px;
-    background: linear-gradient(135deg, #00d4aa 0%, #6366f1 50%, #ef4444 100%);
+    background: linear-gradient(135deg, #0f172a 0%, #3730a3 50%, #4f46e5 100%);
     -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-    line-height: 1.1; margin-bottom: 14px;
-    filter: drop-shadow(0 0 35px rgba(99, 102, 241, 0.25));
+    line-height: 1.1; margin-bottom: 16px;
+    filter: drop-shadow(0 4px 16px rgba(99, 102, 241, 0.12));
 }}
 .hero-sub {{
-    font-size: 16px; color: #94a3b8; max-width: 780px;
-    margin: 0 auto 32px; line-height: 1.6;
+    font-size: 16px; color: #475569; max-width: 780px;
+    margin: 0 auto 34px; line-height: 1.65;
 }}
 
-/* Headline Callout: Total Trapped Capital */
+/* Headline Callout: Total Trapped Capital (3D Luminous Pearl) */
 .trapped-box {{
-    background: linear-gradient(135deg, rgba(239,68,68,0.14) 0%, rgba(99,102,241,0.12) 100%);
-    border: 1px solid rgba(239,68,68,0.35); border-radius: 20px; padding: 24px 30px; margin: 0 auto 34px;
-    max-width: 960px; display: flex; justify-content: space-between; align-items: center;
-    flex-wrap: wrap; gap: 18px; backdrop-filter: blur(16px);
-    box-shadow: 0 8px 32px rgba(239, 68, 68, 0.12);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 241, 242, 0.6) 100%);
+    border: 1px solid rgba(244, 63, 94, 0.3); border-radius: 22px; padding: 26px 34px; margin: 0 auto 38px;
+    max-width: 980px; display: flex; justify-content: space-between; align-items: center;
+    flex-wrap: wrap; gap: 20px; backdrop-filter: blur(24px);
+    box-shadow: 0 14px 36px -4px rgba(244, 63, 94, 0.12), 0 0 24px rgba(244, 63, 94, 0.08), inset 0 1px 0 #ffffff;
+    position: relative; overflow: hidden;
+}}
+.trapped-box::before {{
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px;
+    background: linear-gradient(90deg, #f43f5e 0%, #fb7185 50%, #f59e0b 100%);
+    box-shadow: 0 0 12px rgba(244, 63, 94, 0.5);
 }}
 .trapped-title {{
-    font-size: 12px; color: #ef4444; text-transform: uppercase; font-weight: 800; letter-spacing: 1px;
+    font-size: 12px; color: #e11d48; text-transform: uppercase; font-weight: 800; letter-spacing: 1.2px;
 }}
 .trapped-amount {{
-    font-size: 42px; font-weight: 900; color: #f8fafc; line-height: 1.1; margin-top: 4px;
+    font-size: 46px; font-weight: 900; color: #0f172a; line-height: 1.1; margin-top: 4px;
+    font-family: 'JetBrains Mono', monospace; font-variant-numeric: tabular-nums;
 }}
 .trapped-sub {{
-    font-size: 13px; color: #94a3b8; margin-top: 6px;
+    font-size: 13px; color: #475569; margin-top: 8px; font-weight: 500;
 }}
 .trapped-badges {{
-    display: flex; gap: 12px;
+    display: flex; gap: 14px;
 }}
 .trapped-pill {{
-    background: rgba(15,23,42,0.85); border: 1px solid #334155; border-radius: 12px;
-    padding: 12px 20px; text-align: center; min-width: 90px;
+    background: #ffffff; border: 1px solid rgba(226, 232, 240, 0.9); border-radius: 14px;
+    padding: 14px 22px; text-align: center; min-width: 100px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03), inset 0 1px 0 #ffffff;
 }}
 
 /* Stat Pills */
@@ -141,123 +157,128 @@ st.markdown(f"""
     flex-wrap: wrap; margin-bottom: 40px;
 }}
 .stat-pill {{
-    background: #0d1322; border: 1px solid #1e293b; border-radius: 16px;
-    padding: 14px 26px; text-align: center; min-width: 150px;
-    transition: transform 0.2s ease, border-color 0.2s ease;
+    background: #ffffff; border: 1px solid rgba(226, 232, 240, 0.9); border-radius: 18px;
+    padding: 16px 28px; text-align: center; min-width: 160px;
+    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.03), inset 0 1px 0 #ffffff;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }}
 .stat-pill:hover {{
-    transform: translateY(-2px); border-color: #334155;
+    transform: translateY(-3px); border-color: rgba(99, 102, 241, 0.3);
+    box-shadow: 0 10px 24px -2px rgba(99, 102, 241, 0.12), inset 0 1px 0 #ffffff;
 }}
-.stat-num {{ font-size: 26px; font-weight: 800; }}
-.stat-lbl {{ font-size: 11px; color: #64748b; text-transform: uppercase; letter-spacing: 0.6px; margin-top: 3px; }}
+.stat-num {{ font-size: 28px; font-weight: 800; font-family: 'JetBrains Mono', monospace; }}
+.stat-lbl {{ font-size: 11px; color: #64748b; text-transform: uppercase; letter-spacing: 0.6px; margin-top: 4px; font-weight: 700; }}
 
-/* Agent Cards */
+/* Agent Cards (3D Luminous Pearl) */
 .agent-card {{
-    background: #0d1322; border-radius: 20px; padding: 30px 26px;
-    border: 1px solid #1e293b; position: relative; overflow: hidden;
-    transition: all 0.3s ease; min-height: 340px; margin-bottom: 12px; display: flex; flex-direction: column;
+    background: rgba(255, 255, 255, 0.92); border-radius: 22px; padding: 32px 28px;
+    border: 1px solid rgba(226, 232, 240, 0.9); position: relative; overflow: hidden;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1); min-height: 350px; margin-bottom: 14px;
+    display: flex; flex-direction: column; backdrop-filter: blur(20px);
+    box-shadow: 0 10px 30px -4px rgba(15, 23, 42, 0.05), inset 0 1px 0 #ffffff;
 }}
 .agent-card:hover {{
-    border-color: #334155; transform: translateY(-4px);
-    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+    transform: translateY(-5px);
+    box-shadow: 0 18px 40px -4px rgba(15, 23, 42, 0.1), inset 0 1px 0 #ffffff;
+}}
+.agent-1:hover {{
+    border-color: rgba(99, 102, 241, 0.4);
+    box-shadow: 0 18px 40px -4px rgba(99, 102, 241, 0.15), 0 0 20px rgba(99, 102, 241, 0.1), inset 0 1px 0 #ffffff;
+}}
+.agent-2:hover {{
+    border-color: rgba(16, 185, 129, 0.4);
+    box-shadow: 0 18px 40px -4px rgba(16, 185, 129, 0.15), 0 0 20px rgba(16, 185, 129, 0.1), inset 0 1px 0 #ffffff;
+}}
+.agent-3:hover {{
+    border-color: rgba(244, 63, 94, 0.4);
+    box-shadow: 0 18px 40px -4px rgba(244, 63, 94, 0.15), 0 0 20px rgba(244, 63, 94, 0.1), inset 0 1px 0 #ffffff;
 }}
 .agent-card::before {{
     content: ''; position: absolute; top: 0; left: 0; right: 0;
-    height: 4px; border-radius: 20px 20px 0 0;
+    height: 5px; border-radius: 22px 22px 0 0;
 }}
-.agent-1::before {{ background: linear-gradient(90deg, #6366f1, #00d4aa); }}
-.agent-2::before {{ background: linear-gradient(90deg, #00d4aa, #10b981); }}
-.agent-3::before {{ background: linear-gradient(90deg, #ef4444, #f59e0b); }}
+.agent-1::before {{
+    background: linear-gradient(90deg, #6366f1 0%, #06b6d4 100%);
+    box-shadow: 0 2px 10px rgba(99, 102, 241, 0.4);
+}}
+.agent-2::before {{
+    background: linear-gradient(90deg, #059669 0%, #10b981 100%);
+    box-shadow: 0 2px 10px rgba(16, 185, 129, 0.4);
+}}
+.agent-3::before {{
+    background: linear-gradient(90deg, #e11d48 0%, #f59e0b 100%);
+    box-shadow: 0 2px 10px rgba(244, 63, 94, 0.4);
+}}
 
-.agent-icon {{ font-size: 44px; margin-bottom: 16px; }}
-.agent-title {{ font-size: 21px; font-weight: 800; color: #f8fafc; margin-bottom: 6px; }}
-.agent-subtitle {{ font-size: 12px; text-transform: uppercase; letter-spacing: 0.8px; color: #64748b; margin-bottom: 12px; font-weight: 700; }}
-.agent-desc {{ font-size: 13px; color: #94a3b8; line-height: 1.6; margin-bottom: 20px; flex-grow: 1; }}
+.agent-icon {{ font-size: 44px; margin-bottom: 16px; line-height: 1.2; }}
+.agent-title {{ font-size: 21px; font-weight: 800; color: #0f172a; margin-bottom: 6px; letter-spacing: -0.5px; }}
+.agent-subtitle {{ font-size: 11px; text-transform: uppercase; letter-spacing: 0.8px; color: #64748b; margin-bottom: 12px; font-weight: 700; }}
+.agent-desc {{ font-size: 13px; color: #475569; line-height: 1.6; margin-bottom: 20px; flex-grow: 1; }}
 
 .feature-chip {{
-    display: inline-block; background: #131c31; border: 1px solid #23314d;
-    border-radius: 20px; padding: 3px 10px; font-size: 11px; color: #94a3b8;
-    margin: 3px 2px;
+    display: inline-block; background: #f8fafc; border: 1px solid #e2e8f0;
+    border-radius: 20px; padding: 4px 11px; font-size: 11px; color: #475569;
+    font-weight: 600; margin: 3px 2px; box-shadow: 0 1px 3px rgba(0,0,0,0.02);
 }}
 .port-tag {{
-    position: absolute; top: 20px; right: 20px;
-    background: #070a13; border: 1px solid #1e293b; border-radius: 8px;
-    padding: 5px 12px; font-size: 11px; font-family: monospace; font-weight: 700;
+    position: absolute; top: 22px; right: 22px;
+    border-radius: 10px; padding: 5px 12px; font-size: 11px;
+    font-family: 'JetBrains Mono', monospace; font-weight: 700;
 }}
-.tag-online {{ color: #10b981; border-color: rgba(16, 185, 129, 0.4); background: rgba(16, 185, 129, 0.1); }}
-.tag-offline {{ color: #f59e0b; border-color: rgba(245, 158, 11, 0.4); background: rgba(245, 158, 11, 0.1); }}
+.tag-online {{
+    color: #059669; border: 1px solid rgba(16, 185, 129, 0.3); background: #ecfdf5;
+    box-shadow: 0 0 10px rgba(16, 185, 129, 0.15);
+}}
+.tag-offline {{
+    color: #d97706; border: 1px solid rgba(245, 158, 11, 0.3); background: #fffbeb;
+    box-shadow: 0 0 10px rgba(245, 158, 11, 0.15);
+}}
 
 /* Link Buttons */
-div[data-testid="stLinkButton"] > a {{
-    display: flex !important;
-    justify-content: center !important;
-    align-items: center !important;
-    border-radius: 12px !important;
-    font-weight: 700 !important;
-    font-size: 14px !important;
-    text-decoration: none !important;
-    padding: 13px 20px !important;
-    transition: all 0.25s ease !important;
+
+/* Robust 3D Tactile Link Buttons */
+.btn-a1 a, .btn-a1 [data-testid="stLinkButton"] a {
+    background: linear-gradient(135deg, #4f46e5, #6366f1) !important;
+    color: #ffffff !important;
     border: none !important;
-}}
-div[data-testid="stLinkButton"] > a:hover {{
-    transform: translateY(-2px) !important;
-}}
-
-.btn-a1 div[data-testid="stLinkButton"] > a {{
-    background: linear-gradient(135deg, #3730a3, #6366f1) !important;
+    box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.4) !important;
+}
+.btn-a1 a:hover, .btn-a1 [data-testid="stLinkButton"] a:hover {
+    box-shadow: 0 10px 28px rgba(99, 102, 241, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.5) !important;
     color: #ffffff !important;
-    box-shadow: 0 4px 16px rgba(99, 102, 241, 0.35) !important;
-}}
-.btn-a1 div[data-testid="stLinkButton"] > a:hover {{
-    box-shadow: 0 8px 26px rgba(99, 102, 241, 0.6) !important;
-}}
-
-.btn-a2 div[data-testid="stLinkButton"] > a {{
-    background: linear-gradient(135deg, #065f46, #00d4aa) !important;
-    color: #04120e !important;
-    box-shadow: 0 4px 16px rgba(0, 212, 170, 0.35) !important;
-}}
-.btn-a2 div[data-testid="stLinkButton"] > a:hover {{
-    box-shadow: 0 8px 26px rgba(0, 212, 170, 0.6) !important;
-}}
-
-.btn-a3 div[data-testid="stLinkButton"] > a {{
-    background: linear-gradient(135deg, #7f1d1d, #ef4444) !important;
+}
+.btn-a1 a p, .btn-a1 a span {
     color: #ffffff !important;
-    box-shadow: 0 4px 16px rgba(239, 68, 68, 0.35) !important;
-}}
-.btn-a3 div[data-testid="stLinkButton"] > a:hover {{
-    box-shadow: 0 8px 26px rgba(239, 68, 68, 0.6) !important;
-}}
+}
 
-.direct-link {{
-    display: block; text-align: center; font-size: 11px;
-    margin-top: 10px; text-decoration: underline; opacity: 0.85;
-}}
-.direct-link:hover {{ opacity: 1.0; }}
+.btn-a2 a, .btn-a2 [data-testid="stLinkButton"] a {
+    background: linear-gradient(135deg, #059669, #10b981) !important;
+    color: #ffffff !important;
+    border: none !important;
+    box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.4) !important;
+}
+.btn-a2 a:hover, .btn-a2 [data-testid="stLinkButton"] a:hover {
+    box-shadow: 0 10px 28px rgba(16, 185, 129, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.5) !important;
+    color: #ffffff !important;
+}
+.btn-a2 a p, .btn-a2 a span {
+    color: #ffffff !important;
+}
 
-/* Dashboard & Ledger Table */
-.dashboard-card {{
-    background: #0d1322; border: 1px solid #1e293b; border-radius: 18px;
-    padding: 24px; margin-top: 20px;
-}}
-.data-table {{
-    width: 100%; border-collapse: collapse; font-size: 13px;
-}}
-.data-table th {{
-    text-align: left; padding: 10px 12px; color: #64748b; font-size: 11px;
-    text-transform: uppercase; border-bottom: 1px solid #1e293b;
-}}
-.data-table td {{
-    padding: 12px; border-bottom: 1px solid #131c31; color: #cbd5e1;
-}}
-.badge-status {{
-    display: inline-block; padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: 700;
-}}
-.badge-caution {{ background: rgba(245, 158, 11, 0.15); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.3); }}
-.badge-critical {{ background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); }}
-.money-cell {{ text-align: right; font-family: monospace; font-weight: 700; color: #f8fafc; }}
+.btn-a3 a, .btn-a3 [data-testid="stLinkButton"] a {
+    background: linear-gradient(135deg, #e11d48, #f43f5e) !important;
+    color: #ffffff !important;
+    border: none !important;
+    box-shadow: 0 6px 20px rgba(244, 63, 94, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.4) !important;
+}
+.btn-a3 a:hover, .btn-a3 [data-testid="stLinkButton"] a:hover {
+    box-shadow: 0 10px 28px rgba(244, 63, 94, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.5) !important;
+    color: #ffffff !important;
+}
+.btn-a3 a p, .btn-a3 a span {
+    color: #ffffff !important;
+}
+
 </style>
 """, unsafe_allow_html=True)
 
@@ -295,7 +316,7 @@ st.markdown(f"""
       🚨 Aggregate Trapped Capital Requiring Action Today
     </div>
     <div class='trapped-amount'>
-      {CURRENCY_SYM}{total_trapped:,.0f}<span style='font-size: 20px; color: #94a3b8; font-weight: 500'>.00</span>
+      {CURRENCY_SYM}{total_trapped:,.0f}<span style='font-size: 22px; color: #64748b; font-weight: 600'>.00</span>
     </div>
     <div class='trapped-sub'>
       Spans: <strong>{CURRENCY_SYM}{kyc_hold_amount:,.0f}</strong> KYC Holds (Agent 1) + <strong>{CURRENCY_SYM}{recovery_agent2:,.0f}</strong> Settlement Deficits & <strong>{CURRENCY_SYM}{fee_overcharge:,.0f}</strong> Fee Variances (Agent 2)
@@ -303,12 +324,12 @@ st.markdown(f"""
   </div>
   <div class='trapped-badges'>
     <div class='trapped-pill'>
-      <div style='font-size: 20px; font-weight: 800; color: #ef4444'>{held_txns_count}</div>
-      <div style='font-size: 10px; color: #64748b; text-transform: uppercase'>Held Txns</div>
+      <div style='font-size: 22px; font-weight: 800; color: #e11d48; font-family: "JetBrains Mono", monospace'>{held_txns_count}</div>
+      <div style='font-size: 10px; color: #64748b; text-transform: uppercase; font-weight: 700'>Held Txns</div>
     </div>
     <div class='trapped-pill'>
-      <div style='font-size: 20px; font-weight: 800; color: #f59e0b'>T+5</div>
-      <div style='font-size: 10px; color: #64748b; text-transform: uppercase'>TAT Breach</div>
+      <div style='font-size: 22px; font-weight: 800; color: #d97706; font-family: "JetBrains Mono", monospace'>T+5</div>
+      <div style='font-size: 10px; color: #64748b; text-transform: uppercase; font-weight: 700'>TAT Breach</div>
     </div>
   </div>
 </div>
@@ -317,10 +338,10 @@ st.markdown(f"""
 # ─── Key Stats Row ────────────────────────────────────────────────────────────
 st.markdown("""
 <div class='stat-row'>
-  <div class='stat-pill'><div class='stat-num' style='color:#6366f1'>3</div><div class='stat-lbl'>Autonomous AI Agents</div></div>
-  <div class='stat-pill'><div class='stat-num' style='color:#00d4aa'>25+</div><div class='stat-lbl'>RBI Statutory Directions</div></div>
-  <div class='stat-pill'><div class='stat-num' style='color:#ef4444'>4</div><div class='stat-lbl'>Statutory Escalation Tiers</div></div>
-  <div class='stat-pill'><div class='stat-num' style='color:#f59e0b'>100%</div><div class='stat-lbl'>Policy-Driven & Auditable</div></div>
+  <div class='stat-pill'><div class='stat-num' style='color:#4f46e5'>3</div><div class='stat-lbl'>Autonomous AI Agents</div></div>
+  <div class='stat-pill'><div class='stat-num' style='color:#059669'>25+</div><div class='stat-lbl'>RBI Statutory Directions</div></div>
+  <div class='stat-pill'><div class='stat-num' style='color:#e11d48'>4</div><div class='stat-lbl'>Statutory Escalation Tiers</div></div>
+  <div class='stat-pill'><div class='stat-num' style='color:#d97706'>100%</div><div class='stat-lbl'>Policy-Driven & Auditable</div></div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -351,7 +372,7 @@ with col1:
     st.markdown("<div class='btn-a1'>", unsafe_allow_html=True)
     st.link_button("🛡️ Launch Agent 1 ↗", url=URL_A1, use_container_width=True)
     st.markdown("</div>", unsafe_allow_html=True)
-    st.markdown(f"<a class='direct-link' href='{URL_A1}' target='_blank' style='color:#6366f1'>Direct Link: {URL_A1}</a>", unsafe_allow_html=True)
+    st.markdown(f"<a class='direct-link' href='{URL_A1}' target='_blank' style='color:#4f46e5'>Direct Link: {URL_A1}</a>", unsafe_allow_html=True)
 
 with col2:
     tag_cls = "tag-online" if a2_active else "tag-offline"
@@ -377,7 +398,7 @@ with col2:
     st.markdown("<div class='btn-a2'>", unsafe_allow_html=True)
     st.link_button("💳 Launch Agent 2 ↗", url=URL_A2, use_container_width=True)
     st.markdown("</div>", unsafe_allow_html=True)
-    st.markdown(f"<a class='direct-link' href='{URL_A2}' target='_blank' style='color:#00d4aa'>Direct Link: {URL_A2}</a>", unsafe_allow_html=True)
+    st.markdown(f"<a class='direct-link' href='{URL_A2}' target='_blank' style='color:#059669'>Direct Link: {URL_A2}</a>", unsafe_allow_html=True)
 
 with col3:
     tag_cls = "tag-online" if a3_active else "tag-offline"
@@ -403,12 +424,12 @@ with col3:
     st.markdown("<div class='btn-a3'>", unsafe_allow_html=True)
     st.link_button("⚖️ Launch Agent 3 ↗", url=URL_A3, use_container_width=True)
     st.markdown("</div>", unsafe_allow_html=True)
-    st.markdown(f"<a class='direct-link' href='{URL_A3}' target='_blank' style='color:#ef4444'>Direct Link: {URL_A3}</a>", unsafe_allow_html=True)
+    st.markdown(f"<a class='direct-link' href='{URL_A3}' target='_blank' style='color:#e11d48'>Direct Link: {URL_A3}</a>", unsafe_allow_html=True)
 
-st.markdown("<br><hr style='border-color:#1e293b'>", unsafe_allow_html=True)
+st.markdown("<br><hr style='border-color:#e2e8f0'>", unsafe_allow_html=True)
 
-# ─── Remediation Workflow Diagram ─────────────────────────────────────────────
-st.markdown("<h3 style='color:#f8fafc;font-size:20px;margin-bottom:16px;'>🗺️ Full Remediation Workflow</h3>", unsafe_allow_html=True)
+# ─── Remediation Workflow Diagram (White 3D Pearl Tiles) ─────────────────────
+st.markdown("<h3 style='color:#0f172a;font-size:20px;margin-bottom:16px;font-weight:800;'>🗺️ Full Remediation Workflow</h3>", unsafe_allow_html=True)
 flow_cols = st.columns(7)
 steps_flow = [
     ("🛡️", "Agent 1", "Diagnose hold cause & check KYC"),
@@ -423,14 +444,14 @@ for col, (emoji, title, desc) in zip(flow_cols, steps_flow):
     with col:
         if title:
             st.markdown(f"""
-            <div style='text-align:center;background:#0d1322;border-radius:14px;padding:14px 6px;border:1px solid #1e293b;min-height:96px;display:flex;flex-direction:column;align-items:center;justify-content:center'>
+            <div style='text-align:center;background:#ffffff;border-radius:16px;padding:16px 8px;border:1px solid #e2e8f0;min-height:98px;display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:0 4px 14px rgba(15, 23, 42, 0.03), inset 0 1px 0 #ffffff;'>
               <div style='font-size:24px;line-height:1.2'>{emoji}</div>
-              <div style='font-size:12px;color:#f8fafc;font-weight:700;margin-top:4px;white-space:nowrap'>{title}</div>
-              <div style='font-size:11px;color:#94a3b8;margin-top:4px;line-height:1.3'>{desc}</div>
+              <div style='font-size:12px;color:#0f172a;font-weight:800;margin-top:4px;white-space:nowrap'>{title}</div>
+              <div style='font-size:11px;color:#64748b;margin-top:4px;line-height:1.3'>{desc}</div>
             </div>
             """, unsafe_allow_html=True)
         else:
-            st.markdown(f"<div style='text-align:center;padding:32px 0;font-size:22px;color:#475569'>{emoji}</div>", unsafe_allow_html=True)
+            st.markdown(f"<div style='text-align:center;padding:32px 0;font-size:22px;color:#94a3b8'>{emoji}</div>", unsafe_allow_html=True)
 
 # ─── Live Ledger & Settlement Payout Health (Integrated) ───────────────────────
 st.markdown("<br>", unsafe_allow_html=True)
@@ -459,7 +480,7 @@ with st.expander("📊 Live Sample Payout Health & Attention Ledger (Inspect Sam
         st.info("No flagged or pending transactions in this report.")
 
 # ─── Footer ───────────────────────────────────────────────────────────────────
-st.markdown("<br><hr style='border-color:#1e293b'>", unsafe_allow_html=True)
+st.markdown("<br><hr style='border-color:#e2e8f0'>", unsafe_allow_html=True)
 st.markdown(
     f"<div style='text-align:center;font-size:12px;color:#64748b;padding-bottom:20px;line-height:1.6'>"
     f"<strong>MerchantOS</strong> — Autonomous Compliance & Settlement Resolution Copilot for Indian Merchants | "
