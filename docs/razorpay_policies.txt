@@ -1,126 +1,37 @@
-﻿RAZORPAY MERCHANT POLICIES AND KYC REQUIREMENTS
-Source: Razorpay Official Support Documentation | Last Updated: August 2026
+RAZORPAY PUBLIC MERCHANT DOCUMENTATION - VERIFIED GUIDE
 
-RAZORPAY KYC COMPLIANCE OVERVIEW
+SOURCES: Razorpay public documentation
+KYC URL: https://razorpay.com/docs/payments/business-types-kyc-documents/
+SETTLEMENT URL: https://razorpay.com/docs/payments/settlements/
+HOLD URL: https://razorpay.com/docs/payments/settlements/dashboard/
+LAST VERIFIED: 12 September 2026
 
-Razorpay, as a Payment Aggregator (PA) licensed by the RBI, is required to verify the identity of all merchants on its platform. This process, known as Know Your Customer (KYC), is mandated under the RBI Master Direction on Payment Aggregators 2025.
+SOURCE BOUNDARY
 
-RAZORPAY ACCOUNT STATES AND WHAT THEY MEAN
+This file summarises public documentation and is not a copy of a merchant's individual contract or dashboard. Product eligibility, documents, settlement schedules, pricing, and risk controls can vary. The current dashboard, provider communication, and merchant agreement should be treated as case-specific evidence.
 
-Live Disabled: Your account exists but all payment acceptance is paused. This is the most common state for KYC holds. You cannot accept new payments but can view your dashboard.
+KYC DOCUMENTS
 
-Payment Disabled: Only payment links and payment buttons are disabled. Your payment pages may still work. Usually a partial hold for minor compliance gaps.
+Razorpay publishes a current KYC document page organised by business type. It also states that additional certifications may be requested depending on the line of business. Merchants should use the current provider page and dashboard checklist rather than a static MerchantOS list as the final requirement.
 
-Settlement on Hold: You can still accept payments but funds are not being settled to your bank account. The money accumulates in Razorpay's escrow. This is common for risk-related holds.
+Current public material describes CKYCR consent and verification flows. It distinguishes registered businesses, individuals, proprietorships, partnerships, companies, trusts, and other entity types. Document requests may include PAN, identity or address proof, entity documents, authorised-signatory evidence, beneficial-owner information, or category-specific licences.
 
-Account Suspended: Full account freeze. No payments, no settlements, no access to funds. This is the most severe state and requires immediate action.
+If a requested document is unavailable, ask support which current policy, risk condition, or legal rule requires it and whether an accepted alternative exists. Do not claim that the RBI PA Directions themselves prohibit a GST request; paragraph 13 points to KYC due diligence but does not provide a merchant-type GST checklist.
 
-Under Review / Pending KYC: Razorpay is actively reviewing your submitted documents. This state typically lasts 2-7 business days.
+SETTLEMENT SCHEDULE
 
-RAZORPAY KYC REQUIREMENTS BY MERCHANT TYPE
+Razorpay's public settlement documentation describes T+2 working days as the standard domestic settlement cycle while noting that the schedule can vary based on business vertical, risk factors, bank approval, and the schedule shown in the dashboard. International settlement timing is shown in the dashboard and depends on applicable requirements.
 
-1. SOLE PROPRIETOR - UNREGISTERED:
-   - PAN Card of the proprietor (mandatory)
-   - Aadhaar Card of the proprietor (mandatory)
-   - Bank account in proprietor name (mandatory)
-   - Business proof - ANY ONE of: Last 6 months bank statement, Utility bill in business name, Udyam registration, Self-declaration letter
-   - IMPORTANT: GST Certificate is NOT mandatory for unregistered sole proprietors per RBI PA Directions 2025 Para 4.3(ii). Razorpay's internal policy cannot override RBI regulations.
+MerchantOS therefore treats T+2 as a configurable provider expectation, not a universal statutory RBI deadline. Bank holidays are not automatically modelled by the local audit; verify exceptions against the dashboard timeline.
 
-2. SOLE PROPRIETOR - REGISTERED (with GST or Udyam):
-   - PAN Card of the proprietor (mandatory)
-   - Aadhaar Card of the proprietor (mandatory)
-   - GST Certificate OR Udyam Registration (mandatory for registered proprietors)
-   - Bank account in business or proprietor name
+SETTLEMENT HOLDS
 
-3. PARTNERSHIP FIRM:
-   - PAN Card of the firm (mandatory)
-   - Partnership Deed - registered or unregistered (mandatory)
-   - PAN Card and Aadhaar of each partner (mandatory)
-   - Bank account in the firm name (mandatory)
-   - Any one of: GST Certificate, 6-month bank statement
+Razorpay's dashboard documentation says a settlement may be placed on hold when risk is detected with payments or the account. The merchant is notified on the dashboard and is directed to contact support to enable held settlements. Preserve the dashboard notice and all provider correspondence.
 
-4. PRIVATE LIMITED COMPANY:
-   - Certificate of Incorporation from MCA (mandatory)
-   - Company PAN Card (mandatory)
-   - Memorandum of Association (MOA) (mandatory)
-   - Articles of Association (AOA) (mandatory)
-   - Board Resolution authorizing the signatory (mandatory)
-   - PAN Card and Aadhaar of all Directors (mandatory)
-   - Any one of: GST Certificate, latest audited financials
+RECONCILIATION
 
-5. NGO / TRUST / SOCIETY:
-   - Trust Deed or Certificate of Registration (mandatory)
-   - PAN Card of the entity (mandatory)
-   - PAN and Aadhaar of trustees or governing body (mandatory)
-   - 12A Registration Certificate (for income tax exemption) recommended
-   - 80G Certificate if applicable
-   - GST is generally NOT applicable to NGOs and cannot be mandated
+Razorpay's settlement breakdown includes payment amount, adjustments, tax, fees, and settlement amount. Compare the exported report with the contracted pricing and dashboard schedule. MerchantOS fee rates are operator-configured estimates and must not be presented as the provider's binding price list.
 
-6. INDIVIDUAL FREELANCER:
-   - PAN Card (mandatory)
-   - Aadhaar Card (mandatory)
-   - Bank account in individual name (mandatory)
-   - Work portfolio, client contracts, or 6-month bank statement as business proof
-   - GST Certificate: Only mandatory if annual turnover exceeds Rs. 20 lakh (Rs. 10 lakh for special category states). Below this threshold, GST registration is optional and cannot be demanded.
+ESCALATION RECORD
 
-RAZORPAY SETTLEMENT TIMELINES
-
-Standard Settlement Cycle: T+2 business days for most merchants (T = day of transaction).
-Instant Settlements: Available for Rs. 9/transaction for eligible merchants with low-risk profile.
-Manual Settlement: Available on request outside normal settlement cycle.
-International Payments: T+5 to T+7 business days due to correspondent banking requirements.
-
-Settlement Holds - When Razorpay Can Hold Funds:
-1. Pending KYC: Funds held until KYC documents verified. Maximum hold: 30 days after KYC email.
-2. High Chargeback Ratio: Razorpay monitors chargeback ratios relative to Card Network programs (Visa VDMP ~0.9%, Mastercard ECP ~1.0%) and internal risk policy (~0.75% monitoring threshold).
-3. Fraud Detection: Automated systems flag suspicious transaction patterns.
-4. Refund Reserve: Razorpay may hold a rolling reserve (typically 5-10% of daily settlement) for 90-120 days for high-risk merchants.
-
-WHAT RAZORPAY CANNOT DO
-
-Under RBI PA Directions 2025, Razorpay cannot:
-- Demand GST Certificate from merchants who are not required to register for GST
-- Hold settlements for more than 30 days without written justification
-- Block accounts without notifying the merchant in writing within 24 hours
-- Charge merchants for KYC document verification
-- Refuse to provide the reason for a hold in writing
-- Permanently freeze accounts without due process
-
-RAZORPAY GRIEVANCE ESCALATION PROCESS
-
-Level 1 - Support Ticket: Submit at https://razorpay.com/support/
-Response time: 1-2 business days for standard queries, 4 hours for settlement holds.
-
-Level 2 - Grievance Officer: Email grievance.officer@razorpay.com
-Mandatory if Level 1 not resolved within 5 business days.
-Per RBI requirement, Grievance Officer must respond within 30 days.
-
-Level 3 - RBI Integrated Ombudsman: https://cms.rbi.org.in
-Available if Razorpay has not resolved the complaint within 30 days.
-Free of charge. RBI typically responds within 30-45 days.
-
-RAZORPAY CHARGEBACK PROCESS
-
-A chargeback occurs when a customer disputes a transaction with their bank. The bank reverses the payment and Razorpay debits it from the merchant's account.
-
-Chargeback Ratio: (Total chargeback amount / Total transaction amount) x 100
-Safe threshold: Below 0.75% per platform policy and below Card Network thresholds.
-Razorpay monitoring threshold: 0.75% - holds may be placed above this.
-
-To fight a chargeback, merchants should provide:
-- Proof of delivery or service completion
-- Customer communication confirming receipt
-- Invoice and order details
-- IP address and device fingerprint from Razorpay dashboard
-- Refund policy that was visible at time of purchase
-
-TRANSACTION VOLUME SPIKE POLICY
-
-When Razorpay detects an unusual spike in transaction volume (typically 200% or more increase vs. 30-day average), an automated risk hold may be placed.
-
-To resolve a volume spike hold, provide:
-- Business explanation for the volume increase (marketing campaign, seasonal sale, etc.)
-- Sample invoices showing legitimate orders
-- Customer list with contact details (for verification)
-- Letter on company letterhead explaining the business event
-
+Start with the provider's current support and merchant-grievance channels. Retain ticket numbers, dates, responses, transaction IDs, bank statements, and the relevant dashboard timeline. Verify any Ombudsman or legal route separately before submitting a generated draft.
