@@ -2,9 +2,9 @@ import sys
 import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-import fitz  # PyMuPDF
+import pymupdf
 from pathlib import Path
-from src.config import CHUNK_SIZE, CHUNK_OVERLAP, UPLOAD_DIR
+from src import config
 
 
 def parse_pdf(pdf_path: str) -> list[dict]:
@@ -15,7 +15,7 @@ def parse_pdf(pdf_path: str) -> list[dict]:
     if not os.path.exists(pdf_path):
         raise FileNotFoundError(f"PDF not found: {pdf_path}")
 
-    doc = fitz.open(pdf_path)
+    doc = pymupdf.open(pdf_path)
     chunks = []
     chunk_id = 0
 
@@ -52,10 +52,10 @@ def create_chunks(
     Split text into overlapping chunks with metadata.
     """
     # Guard against infinite loop
-    if CHUNK_OVERLAP >= CHUNK_SIZE:
+    if config.CHUNK_OVERLAP >= config.CHUNK_SIZE:
         raise ValueError(
-            f"CHUNK_OVERLAP ({CHUNK_OVERLAP}) must be "
-            f"smaller than CHUNK_SIZE ({CHUNK_SIZE})"
+            f"CHUNK_OVERLAP ({config.CHUNK_OVERLAP}) must be "
+            f"smaller than CHUNK_SIZE ({config.CHUNK_SIZE})"
         )
 
     chunks = []
@@ -63,12 +63,12 @@ def create_chunks(
     local_id = 0
 
     while start < len(text):
-        end = start + CHUNK_SIZE
+        end = start + config.CHUNK_SIZE
         chunk_text = text[start:end]
 
         if chunk_text.strip():
             chunks.append({
-                "chunk_id": f"page_{page_num}_chunk_{chunk_id_start + local_id}",
+                "chunk_id": f"{Path(source).stem[:config.INGEST_SOURCE_ID_MAX_LENGTH]}_page_{page_num}_chunk_{chunk_id_start + local_id}",
                 "text": chunk_text.strip(),
                 "page": page_num,
                 "page_start": page_num,
@@ -80,7 +80,7 @@ def create_chunks(
             local_id += 1
 
         # Move forward by chunk_size minus overlap
-        start = end - CHUNK_OVERLAP
+        start = end - config.CHUNK_OVERLAP
 
         # Safety guard — prevent infinite loop
         if end >= len(text):
@@ -94,8 +94,9 @@ def save_uploaded_pdf(uploaded_file) -> str:
     Save Streamlit uploaded file to uploads folder.
     Returns the saved file path.
     """
-    os.makedirs(UPLOAD_DIR, exist_ok=True)
-    file_path = os.path.join(UPLOAD_DIR, uploaded_file.name)
+    os.makedirs(config.UPLOAD_DIR, exist_ok=True)
+    safe_name = os.path.basename(uploaded_file.name)
+    file_path = os.path.join(config.UPLOAD_DIR, safe_name)
 
     with open(file_path, "wb") as f:
         f.write(uploaded_file.getbuffer())
