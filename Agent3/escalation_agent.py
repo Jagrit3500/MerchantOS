@@ -3,21 +3,23 @@ MerchantOS - Agent 3: Formal Escalation & Recovery Bot
 Generates RBI-cited formal escalation letters, tracks timelines, recommends next steps.
 """
 from __future__ import annotations
+import os, sys
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from src import config
 from datetime import date, datetime, timedelta
 
 # ─── Escalation tiers (RBI / Consumer Protection Act based) ───────────────────
-import os
-_agg_name = os.getenv("PAYMENT_AGGREGATOR_NAME", "Razorpay Software Private Limited")
-_agg_short = os.getenv("PAYMENT_AGGREGATOR_SHORT", "Razorpay")
-_grievance_email = os.getenv("PAYMENT_AGGREGATOR_GRIEVANCE_EMAIL", "grievance.officer@razorpay.com")
-_support_url = os.getenv("PAYMENT_AGGREGATOR_SUPPORT_URL", "razorpay.com/support")
+_agg_name = config.AGGREGATOR_NAME
+_agg_short = config.AGGREGATOR_SHORT
+_grievance_email = config.AGGREGATOR_GRIEVANCE_EMAIL
+_support_url = config.AGGREGATOR_SUPPORT_URL
 
 ESCALATION_TIERS = [
     {
         "tier": 1,
         "name": f"{_agg_short} Support",
         "trigger_days": 0,
-        "deadline_days": 5,
+        "deadline_days": config.SUPPORT_DEADLINE_DAYS,
         "description": f"First point of contact. File via {_support_url} or in-app chat.",
         "contact": _support_url,
         "rbi_ref": None,
@@ -25,29 +27,29 @@ ESCALATION_TIERS = [
     {
         "tier": 2,
         "name": f"{_agg_short} Grievance Officer",
-        "trigger_days": 5,
-        "deadline_days": 30,
-        "description": f"If not resolved within 5 business days, escalate to {_agg_short} Grievance Officer.",
+        "trigger_days": config.GRIEVANCE_TRIGGER_DAYS,
+        "deadline_days": config.GRIEVANCE_DEADLINE_DAYS,
+        "description": f"If not resolved within {config.GRIEVANCE_TRIGGER_DAYS} business days, escalate to {_agg_short} Grievance Officer.",
         "contact": _grievance_email,
-        "rbi_ref": "RBI PA Directions 2025, Para 8 - Grievance Redressal",
+        "rbi_ref": f"{config.PA_DIRECTIONS_REFERENCE}, {config.PA_DISPUTE_REFERENCE}",
     },
     {
         "tier": 3,
         "name": "RBI Integrated Ombudsman",
-        "trigger_days": 30,
-        "deadline_days": 365,
-        "description": "File complaint on cms.rbi.org.in under RBI Integrated Ombudsman Scheme. Valid on procedural grounds (TAT breach, lack of written notice, or arbitrary hold).",
-        "contact": "https://cms.rbi.org.in",
+        "trigger_days": config.OMBUDSMAN_TRIGGER_DAYS,
+        "deadline_days": config.OMBUDSMAN_DEADLINE_DAYS,
+        "description": f"Check coverage, exclusions, and prior-complaint requirements before filing on {config.OMBUDSMAN_URL} under the RBI Integrated Ombudsman Scheme.",
+        "contact": config.OMBUDSMAN_URL,
         "rbi_ref": "RBI Integrated Ombudsman Scheme 2021 (RBI/2021-22/20)",
     },
     {
         "tier": 4,
         "name": "Consumer Forum / Legal Notice",
-        "trigger_days": 90,
+        "trigger_days": config.LEGAL_TRIGGER_DAYS,
         "deadline_days": None,
-        "description": "File consumer complaint under Consumer Protection Act 2019 or send legal notice.",
-        "contact": "consumerhelpline.gov.in",
-        "rbi_ref": "Consumer Protection Act 2019, Section 2(7)",
+        "description": "Ask qualified counsel whether consumer status and jurisdiction apply before sending a legal notice or filing a complaint.",
+        "contact": config.CONSUMER_HELP_URL,
+        "rbi_ref": "Consumer Protection Act 2019 - eligibility and commercial-purpose exclusions require review",
     },
 ]
 
@@ -57,21 +59,21 @@ ISSUE_TYPES = {
     "settlement_hold":    "Settlement Hold / Funds On Hold",
     "settlement_missing": "Missing Settlement",
     "fee_overcharge":     "Fee Overcharge",
-    "tat_violation":      "Settlement TAT Violation (Beyond T+2)",
+    "tat_violation":      "Settlement Timeline Exception",
     "account_suspended":  "Account Suspended / Deactivated",
     "chargeback_dispute": "Chargeback / Dispute Handling",
     "other":              "Other",
 }
 
 ISSUE_RBI_REFS = {
-    "kyc_hold":           "RBI PA Directions 2025, Para 4 - KYC Requirements",
-    "settlement_hold":    "RBI PA Directions 2025, Para 5.4 - Settlement Hold",
-    "settlement_missing": "RBI PA Directions 2025, Para 5.3 - Settlement Timelines",
-    "fee_overcharge":     "RBI PA Directions 2025, Para 6 - Charges",
-    "tat_violation":      "RBI PA Directions 2025, Para 5.3 - T+2 Settlement Cycle",
-    "account_suspended":  "RBI PA Directions 2025, Para 8.2 - Merchant Rights",
-    "chargeback_dispute": "RBI PA Directions 2025, Para 7 - Dispute Resolution",
-    "other":              "RBI PA Directions 2025, General Provisions",
+    "kyc_hold":           f"{config.PA_DIRECTIONS_REFERENCE}, {config.PA_DUE_DILIGENCE_REFERENCE}",
+    "settlement_hold":    f"{config.PA_DIRECTIONS_REFERENCE}, {config.PA_DISPUTE_REFERENCE} and {config.PA_SETTLEMENT_REFERENCE}",
+    "settlement_missing": f"{config.PA_DIRECTIONS_REFERENCE}, {config.PA_SETTLEMENT_REFERENCE}",
+    "fee_overcharge":     f"Merchant agreement and published pricing; {config.PA_DIRECTIONS_REFERENCE}, paragraph 10(c), only where its MDR directions apply",
+    "tat_violation":      f"{config.PA_DIRECTIONS_REFERENCE}, {config.PA_SETTLEMENT_REFERENCE}, plus the merchant agreement",
+    "account_suspended":  f"{config.PA_DIRECTIONS_REFERENCE}, {config.PA_DISPUTE_REFERENCE}",
+    "chargeback_dispute": f"{config.PA_DIRECTIONS_REFERENCE}, {config.PA_DISPUTE_REFERENCE}",
+    "other":              config.PA_DIRECTIONS_REFERENCE,
 }
 
 # ─── Evidence checklist per issue type ─────────────────────────────────────────
@@ -105,7 +107,7 @@ EVIDENCE_CHECKLIST = {
     "tat_violation": [
         f"{_agg_short} settlement CSV showing transaction dates and settlement dates",
         "Calculation showing days between transaction and settlement",
-        "Transaction IDs that exceeded T+2",
+        f"Transaction IDs that exceeded the {config.SETTLEMENT_WINDOW_LABEL}",
     ],
     "account_suspended": [
         "Screenshot of account suspension notice",
@@ -128,7 +130,7 @@ EVIDENCE_CHECKLIST = {
     ],
 }
 
-INR = os.getenv("MERCHANT_CURRENCY_SYMBOL", "\u20b9")
+INR = config.CURRENCY_SYMBOL
 
 
 class EscalationAgent:
@@ -136,6 +138,7 @@ class EscalationAgent:
 
     def recommend_tier(self, days_since_issue: int) -> dict:
         """Return the appropriate escalation tier based on days elapsed."""
+        days_since_issue = max(int(days_since_issue), 0)
         recommended = ESCALATION_TIERS[0]
         for tier in ESCALATION_TIERS:
             if days_since_issue >= tier["trigger_days"]:
@@ -152,7 +155,7 @@ class EscalationAgent:
         return EVIDENCE_CHECKLIST.get(issue_type, EVIDENCE_CHECKLIST["other"])
 
     def calculate_days(self, issue_date: date) -> int:
-        return (date.today() - issue_date).days
+        return max((date.today() - issue_date).days, 0)
 
     def draft_grievance_letter(self, merchant: dict, issue: dict) -> str:
         """Draft formal Razorpay Grievance Officer letter (Tier 2)."""
@@ -163,7 +166,7 @@ class EscalationAgent:
             f"To,",
             f"The Grievance Officer",
             f"{_agg_name}",
-            f"1st Floor, SJR Cyber, 22 Laskar Hosur Road, Bengaluru - 560030",
+            f"{config.AGGREGATOR_ADDRESS}",
             f"Email: {_grievance_email}",
             f"",
             f"Date: {date.today().strftime('%d %B %Y')}",
@@ -189,20 +192,17 @@ class EscalationAgent:
         lines += [
             f"",
             f"REGULATORY BASIS:",
-            f"  Per {rbi_ref}, I am entitled to a written",
-            f"  explanation and resolution within the stipulated timeline.",
-            f"  Per RBI PA Directions 2025, Para 8, {_agg_short} is obligated to",
-            f"  resolve grievances within 30 days of receipt.",
+            f"  I request review under {rbi_ref} and under the settlement and grievance terms",
+            f"  published by {_agg_short}. Please provide a written outcome and the applicable escalation path.",
             f"",
             f"MY REQUEST:",
             f"  1. Immediate resolution of the above issue",
             f"  2. Written explanation citing the specific reason and RBI provision",
-            f"  3. Release of any held funds ({INR}{issue.get('amount', 'N/A')}) within 2 business days",
+            f"  3. Release of any held funds ({INR}{issue.get('amount', 'N/A')}) within {config.SETTLEMENT_RELEASE_REQUEST_DAYS} business days",
             f"  4. Confirmation of actions taken via email",
             f"",
-            f"If this grievance is not resolved within 7 business days from the date of this letter,",
-            f"I will be compelled to file a complaint with the RBI Integrated Ombudsman at cms.rbi.org.in",
-            f"under the RBI Integrated Ombudsman Scheme 2021.",
+            f"If I receive no satisfactory response, I will review whether this complaint is eligible under",
+            f"the {config.OMBUDSMAN_SCHEME_REFERENCE} and, if eligible, use {config.OMBUDSMAN_URL}.",
             f"",
             f"Merchant ID:        {merchant['merchant_id']}",
             f"Registered Email:   {merchant['email']}",
@@ -220,17 +220,31 @@ class EscalationAgent:
         """Draft RBI Integrated Ombudsman complaint (Tier 3)."""
         rbi_ref = ISSUE_RBI_REFS.get(issue["issue_type"], ISSUE_RBI_REFS["other"])
         issue_name = ISSUE_TYPES.get(issue["issue_type"], "Issue")
+        days_elapsed = max(int(issue.get("days_elapsed", 0)), 0)
+        timing_statement = (
+            f"The issue has remained unresolved for {days_elapsed} days."
+            if days_elapsed >= config.OMBUDSMAN_TRIGGER_DAYS
+            else (
+                f"This issue has currently been open for {days_elapsed} days. "
+                "Confirm complaint eligibility and the provider's final response before filing this draft."
+            )
+        )
+        contact_statement = (
+            f"I previously escalated this matter under reference {issue['grievance_ref']}."
+            if issue.get("grievance_ref")
+            else "[ADD DETAILS OF YOUR PRIOR WRITTEN COMPLAINT AND THE PROVIDER'S RESPONSE]"
+        )
 
         lines = [
             f"COMPLAINT TO RBI INTEGRATED OMBUDSMAN",
             f"Under: RBI Integrated Ombudsman Scheme 2021 (RBI/2021-22/20)",
-            f"Portal: cms.rbi.org.in",
+            f"Portal: {config.OMBUDSMAN_URL}",
             f"",
             f"Date: {date.today().strftime('%d %B %Y')}",
             f"",
             f"TO: The Ombudsman",
             f"    RBI Integrated Ombudsman Scheme",
-            f"    (via online portal: cms.rbi.org.in)",
+            f"    (via online portal: {config.OMBUDSMAN_URL})",
             f"",
             f"SECTION A - COMPLAINANT DETAILS",
             f"  Full Name:       {merchant['name']}",
@@ -241,9 +255,9 @@ class EscalationAgent:
             f"",
             f"SECTION B - PAYMENT AGGREGATOR DETAILS",
             f"  Name:    {_agg_name}",
-            f"  Type:    Payment Aggregator (RBI Licensed)",
-            f"  CIN:     U72200KA2013PTC069276",
-            f"  Address: 1st Floor, SJR Cyber, 22 Laskar Hosur Road, Bengaluru - 560030",
+            f"  Type:    Payment Aggregator",
+            f"  CIN:     {config.AGGREGATOR_CIN}",
+            f"  Address: {config.AGGREGATOR_ADDRESS}",
             f"",
             f"SECTION C - COMPLAINT DETAILS",
             f"  Merchant Account ID: {merchant['merchant_id']}",
@@ -256,20 +270,18 @@ class EscalationAgent:
             f"",
             f"  {issue.get('description', '[Describe the issue in detail]')}",
             f"",
-            f"  Despite multiple follow-ups, {_agg_short} has not resolved this issue.",
-            f"  The issue has been pending for {issue['days_elapsed']} days, exceeding",
-            f"  the 30-day resolution timeline mandated by the RBI.",
+            f"  {contact_statement}",
+            f"  {timing_statement}",
             f"",
             f"SECTION E - REGULATORY PROVISIONS VIOLATED",
             f"  1. {rbi_ref}",
-            f"  2. RBI PA Directions 2025, Para 8 - Grievance Redressal (30-day resolution)",
-            f"  3. RBI Integrated Ombudsman Scheme 2021, Para 8 - Grounds of Complaint",
+            f"  2. {config.PA_DIRECTIONS_REFERENCE}, {config.PA_DISPUTE_REFERENCE} - merchant grievance officer and escalation matrix",
+            f"  3. {config.OMBUDSMAN_SCHEME_REFERENCE} - subject to coverage, maintainability, and exclusions",
             f"",
             f"SECTION F - RELIEF SOUGHT",
             f"  1. Release of held/missing funds: {INR}{issue.get('amount', 'N/A')}",
             f"  2. Written explanation from {_agg_short} citing specific RBI provision",
-            f"  3. Compensation for loss of business during the dispute period",
-            f"  4. Penalty on {_agg_short} for violation of RBI directives",
+            f"  3. Any other relief the Ombudsman considers permissible, if this complaint is maintainable",
             f"",
             f"SECTION G - GRIEVANCE HISTORY",
             f"  1. First contacted {_agg_short} Support on: {issue['first_reported_date']}",
@@ -277,28 +289,33 @@ class EscalationAgent:
         if issue.get("grievance_ref"):
             lines.append(f"  2. Escalated to Grievance Officer - Ref: {issue['grievance_ref']}")
         lines += [
-            f"  Note: 30+ days have passed without satisfactory resolution.",
+            f"  Filing note: Confirm that the applicable complaint prerequisites and waiting period are satisfied.",
             f"",
             f"DECLARATION:",
             f"  I hereby declare that the information provided is true and accurate.",
-            f"  I have not filed this complaint in any other forum.",
+            f"  [CONFIRM WHETHER THIS MATTER HAS BEEN FILED IN ANY OTHER FORUM]",
             f"",
             f"Signature: {merchant['name']}",
             f"Date: {date.today().strftime('%d %B %Y')}",
             f"",
             f"--- DOCUMENTS TO ATTACH ---",
-            f"  (Upload all documents on cms.rbi.org.in during filing)",
+            f"  (Upload all documents on {config.OMBUDSMAN_URL} during filing)",
         ]
         for i, doc in enumerate(self.get_evidence_checklist(issue["issue_type"]), 1):
             lines.append(f"  {i}. {doc}")
         return "\n".join(lines)
 
     def draft_legal_notice(self, merchant: dict, issue: dict) -> str:
-        """Draft legal notice under Consumer Protection Act 2019 (Tier 4)."""
+        """Draft a counsel-review legal notice for the optional Tier 4 route."""
         issue_name = ISSUE_TYPES.get(issue["issue_type"], "Issue")
+        followup_statement = (
+            "Despite the prior written complaint referenced in the attached record,"
+            if issue.get("grievance_ref")
+            else "As of the date of this draft,"
+        )
         lines = [
-            f"LEGAL NOTICE",
-            f"Under: Consumer Protection Act 2019, Section 35",
+            f"DRAFT LEGAL NOTICE - QUALIFIED COUNSEL REVIEW REQUIRED",
+            f"Potential consumer-law route only if the merchant and transaction are eligible",
             f"",
             f"Date: {date.today().strftime('%d %B %Y')}",
             f"",
@@ -311,8 +328,7 @@ class EscalationAgent:
             f"TO:",
             f"  The Managing Director & CEO",
             f"  {_agg_name}",
-            f"  1st Floor, SJR Cyber, 22 Laskar Hosur Road",
-            f"  Bengaluru - 560030, Karnataka",
+            f"  {config.AGGREGATOR_ADDRESS}",
             f"",
             f"SUBJECT: Legal Notice for {issue_name} - Merchant ID: {merchant['merchant_id']}",
             f"",
@@ -324,21 +340,21 @@ class EscalationAgent:
             f"2. On {issue['first_reported_date']}, I experienced: {issue_name}.",
             f"   Amount affected: {INR}{issue.get('amount', 'N/A')}.",
             f"",
-            f"3. Despite reporting on {issue['first_reported_date']} and multiple follow-ups,",
+            f"3. {followup_statement}",
             f"   the issue remains unresolved for {issue['days_elapsed']} days.",
             f"",
-            f"4. Your conduct constitutes:",
-            f"   a) Deficiency in service under Consumer Protection Act 2019, Section 2(11)",
-            f"   b) Unfair trade practice under Consumer Protection Act 2019, Section 2(47)",
-            f"   c) Violation of RBI PA Directions 2025",
+            f"4. Subject to review by a qualified advocate, the facts may raise issues under:",
+            f"   a) The applicable service agreement and provider policies",
+            f"   b) Consumer Protection Act 2019, if the complainant and transaction qualify",
+            f"   c) {config.PA_DIRECTIONS_NAME}",
             f"",
             f"DEMAND:",
             f"   1. Resolve the above issue and release {INR}{issue.get('amount', 'N/A')} within",
-            f"      15 days of receipt of this notice.",
-            f"   2. Pay compensation of {INR}[CLAIM AMOUNT] for business loss.",
+            f"      {config.LEGAL_NOTICE_DEADLINE_DAYS} days of receipt of this notice.",
+            f"   2. Address any documented loss or compensation claim supported by evidence and legal advice.",
             f"",
-            f"FAILING WHICH, I shall file a consumer complaint before the appropriate",
-            f"Consumer Disputes Redressal Commission without further notice.",
+            f"If unresolved, I reserve any remedies available under the agreement and applicable law,",
+            f"including a consumer complaint only if counsel confirms eligibility and jurisdiction.",
             f"",
             f"{merchant['name']}",
             f"(Authorised Signatory)",
@@ -351,13 +367,13 @@ if __name__ == "__main__":
     agent = EscalationAgent()
     # Quick self-test
     merchant = {
-        "name": os.getenv("TEST_MERCHANT_NAME", "Merchant Contact"),
-        "business_name": os.getenv("TEST_BUSINESS_NAME", "Merchant Store Ltd"),
-        "merchant_id": os.getenv("TEST_MERCHANT_ID", "MERCH_001"),
-        "email": os.getenv("TEST_MERCHANT_EMAIL", "merchant@example.com"),
-        "phone": os.getenv("TEST_MERCHANT_PHONE", "9999999999"),
-        "state": os.getenv("TEST_MERCHANT_STATE", "Maharashtra"),
-        "address": os.getenv("TEST_MERCHANT_ADDRESS", "123 Commercial Hub, Mumbai - 400001"),
+        "name": "Merchant Contact",
+        "business_name": "Merchant Store Ltd",
+        "merchant_id": "MERCH_001",
+        "email": "merchant@example.com",
+        "phone": "9999999999",
+        "state": "Maharashtra",
+        "address": "123 Commercial Hub, Mumbai - 400001",
     }
     today = date.today()
     issue = {
@@ -379,5 +395,5 @@ if __name__ == "__main__":
     print(f"Recommended tier: {rec['tier']} - {rec['name']}")
     letter = agent.draft_rbi_ombudsman_complaint(merchant, issue)
     print(f"Ombudsman complaint: {len(letter.splitlines())} lines")
-    assert "cms.rbi.org.in" in letter
+    assert config.OMBUDSMAN_URL in letter
     print("Self-test PASSED")
