@@ -1,160 +1,113 @@
-# ??? MerchantOS: Autonomous Multi-Agent Settlement & Compliance Recovery Copilot
+# MerchantOS
 
-> **Track 3: AI Revenue Recovery** | *Built for Indian MSMEs & Merchants operating on Payment Aggregators (Razorpay)*
+MerchantOS is a local recovery workspace for merchants dealing with payment-account restrictions, held settlements, payout discrepancies, and formal escalation. It combines a public two-section landing page with a command center and three focused Streamlit workflows.
 
-[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
-[![Streamlit](https://img.shields.io/badge/frontend-Streamlit-FF4B4B.svg)](https://streamlit.io/)
-[![ChromaDB](https://img.shields.io/badge/vector--db-ChromaDB-purple.svg)](https://www.trychroma.com/)
-[![Gemini 2.5](https://img.shields.io/badge/LLM-Gemini%202.5%20Flash-4285F4.svg)](https://ai.google.dev/)
-[![RBI PA 2025 Compliant](https://img.shields.io/badge/regulatory-RBI%20PA%202025%20%7C%20Ombudsman%202021-green.svg)](https://www.rbi.org.in/)
+## What is implemented
 
----
+- KYC and fund-hold diagnosis through a six-question decision tree.
+- Editable document checklists and support-request drafts.
+- CSV settlement reconciliation with configurable fee, tax, and turnaround rules.
+- Independent fee and tax overcharge detection, including zero-rate payment methods.
+- Held/pending payout tracking, health scoring, balanced audit totals, and CSV export.
+- A zero-state command center that updates automatically from the latest successful reconciliation.
+- Grievance, RBI Ombudsman, and legal-notice draft generators.
+- A local ChromaDB knowledge base with semantic retrieval, optional Groq answers outside Agent 1, and citation validation.
+- Agent 1 evidence is extracted from the current local policy files; semantic matching supplies source selection and a visible cosine match score without adding freeform legal claims.
+- Automatic semantic policy evidence after each completed workflow, with a refresh action and a current-local-file fallback.
+- Persistent, per-user and per-workspace activity history for completed diagnoses, reconciliations, and explicitly saved escalation cases, with record-level deletion, clear-history confirmation, and links back to the originating workspace. Agent 1 history links reopen the selected saved diagnosis result through the current rules.
+- A contribution-style command-center activity map with 12-month totals, active days, current streak, and workflow distribution instead of exposing detailed records on the overview page.
+- Local email/password registration and sign-in with PBKDF2 password hashing, revocable server-side sessions, and an HttpOnly cookie shared across the workspace services.
+- Shared runtime configuration for ports, URLs, paths, provider details, financial rules, workflow timing, retrieval, scoring, and landing-page media.
 
-## ?? Executive Summary & Problem Statement
+MerchantOS is a decision-support prototype. Its authentication is intended for a single local deployment; it does not provide roles, tenant isolation, or password recovery. Google OpenID Connect is supported when a web OAuth client is configured. The app does not submit complaints, connect to a payment-provider account, persist a complete shared case across services, or replace legal/accounting review. Verify generated correspondence and policy claims before sending.
 
-Indian merchants?especially fast-growing D2C brands, freelancers, and small businesses?frequently encounter sudden settlement holds, unexplained fee deductions, and frozen settlement accounts on payment aggregators like Razorpay.
+## Services
 
-When holds happen:
-- **Merchants are kept in the dark**: Generic support tickets take weeks, citing vague "risk parameters" with no actionable remediation steps.
-- **Working capital is paralyzed**: Weeks of revenue remain trapped in escrow accounts, causing payroll and inventory defaults.
-- **Fee variances go unnoticed**: Hidden interchange rates, GST rounding discrepancies, and MDR variance leak significant margin.
-- **Appeals lack legal grounding**: Merchants submit angry emails instead of legally grounded complaints referencing the **RBI Master Directions on Payment Aggregators (effective September 2025)** and **Card Network Rules (Visa VDMP / Mastercard ECP)**.
+| Service | Default URL |
+| --- | --- |
+| Public landing page | `http://localhost:4173` |
+| Command center | `http://localhost:8501` |
+| KYC and fund-hold diagnosis | `http://localhost:8502` |
+| Settlement reconciliation | `http://localhost:8503` |
+| Formal escalation | `http://localhost:8504` |
 
-**MerchantOS** solves this by acting as an **Autonomous Merchant Compliance & Settlement Resolution Copilot**. It audits merchant transactions, diagnoses fund holds, detects fee leakage, generates audit-ready resolution dossiers, and drafts legally airtight escalation notices?transforming trapped capital into recovered cash flow.
+All ports and public URLs can be overridden in `.env`.
 
----
+## Run locally
 
-## ?? Live Demonstration: ?94,688.00 Trapped Capital Action Card
-
-In our live sample portfolio, MerchantOS instantly flags and segregates:
-- **?75,000.00**: High-risk ticket KYC hold pending In-Person Verification (IPV).
-- **?18,500.00**: Escrow settlement delay past statutory T+2 TAT.
-- **?1,188.00**: Unauthorized MDR fee variance and GST over-deduction.
-- **Total Immediate Actionable Value**: **?94,688.00**
-
----
-
-## ??? System Architecture
-
-```mermaid
-graph TD
-    A[Merchant Data & Policy Inputs] --> B[Unified Home Command Center :8501]
-    
-    subgraph Multi-Agent Ecosystem
-        B --> C[Agent 1: KYC & Fund Hold Copilot :8502]
-        B --> D[Agent 2: Settlement Reconciliation Copilot :8503]
-        B --> E[Agent 3: Regulatory Escalation Copilot :8504]
-    end
-
-    subgraph RAG & Policy Grounding Engine
-        F[(ChromaDB Vector Store)] -->|RBI PA 2025 Directions| C
-        F -->|Razorpay Merchant Agreements| C
-        F -->|Visa VDMP / Mastercard ECP Rules| D
-        F -->|RBI Integrated Ombudsman Scheme 2021| E
-        G[Google Gemini 2.5 Flash] <--> F
-    end
-
-    C --> H[Resolution Dossier & Razorpay Support Ticket]
-    D --> I[Arithmetic Balance Audit & Fee Variance Dispute]
-    E --> J[Nodal Officer & RBI Ombudsman Legal Notice]
-```
-
----
-
-## ?? The Three Specialized Copilots
-
-### 1?? Agent 1: KYC & Fund Hold Diagnosis Copilot (Port 8502)
-*Automates diagnosis of frozen accounts, classifies risk tiers, and builds audit-ready compliance dossiers.*
-- **Dynamic Risk Scoring**: Evaluates business structure, GST registration, high-ticket transactions, and dispute volume to calculate an audit risk score (0-100).
-- **Evidence Checklist Builder**: Generates precise required documentation (e.g., GST Certificate, Cancelled Cheque, In-Person Verification video script).
-- **Automated Ticket Drafter**: Formats structured support tickets citing Razorpay Merchant Onboarding norms.
-- **??? Statutory Guardrail Refusal**: If a merchant refuses statutory obligations (e.g., refuses mandatory In-Person Verification under RBI Master Direction 2025), Agent 1 **honestly refuses** to generate false evasion appeals and guides the merchant to proper compliance.
-
-### 2?? Agent 2: Settlement Reconciliation & Fee Variance Auditor (Port 8503)
-*Line-by-line financial audit comparing gross transactions against settled payouts and agreed MDR.*
-- **Multi-Issue Transaction Deduplication**: Combines overlapping issues (e.g., a transaction that is both `ON HOLD` and has a `FEE VARIANCE`) into a single grouped record with stacked badges?eliminating double-counting.
-- **Deterministic Arithmetic Balance Strip**:
-  `Gross Volume = Settled + Held/Pending + Fees & Tax + Fee Variance (? Reconciled)`
-- **Settlement Health Index**:
-  `Health Index = 100 - (Hold Deductions + TAT Penalties + Fee Discrepancies)`
-- **Audit-Ready Dispute Notice**: Formats itemized dispute tables with expected vs. charged MDR percentages ready for settlement dispute teams.
-
-### 3?? Agent 3: Regulatory Escalation & Ombudsman Copilot (Port 8504)
-*Structured legal escalations adhering to the 3-Tier Grievance Redressal Framework.*
-- **Tier 1**: Level 1 Support Escalation with Razorpay Ticket ID reference.
-- **Tier 2**: Razorpay Principal Nodal Officer (PNO) Formal Notice (citing Clause 13.2 Grievance Redressal).
-- **Tier 3**: RBI Integrated Ombudsman Scheme (2021) Form Draft.
-- **?? Commercial Decision Exclusion Grounding**: Adheres to Clause 10 of the RBI Ombudsman Scheme. Rather than arguing aggregators subjective commercial risk appetite, appeals are anchored strictly to **procedural defaults**:
-  - Failure to provide mandatory 24-hour prior written notice before freezing funds.
-  - Failure to communicate specific compliance deficiencies within statutory TAT.
-  - Breach of T+2 settlement transfer rules without recorded regulatory orders.
-
----
-
-## ?? Verified Regulatory Grounding
-
-MerchantOS does **not** rely on unverified claims or LLM hallucinations:
-| Claim / Metric | Regulatory Source & Grounding |
-| :--- | :--- |
-| **0.5% Chargeback Cap (Myth)** | **Corrected**: The 0.5% statutory cap was an ungrounded myth. In MerchantOS, chargeback thresholds are strictly mapped to Card Network rules: **Visa Dispute Monitoring Program (VDMP at 0.9%)** and **Mastercard Excessive Chargeback Program (ECP at 1.0%)**. |
-| **Settlement Escrow Timelines** | **RBI Master Directions on Payment Aggregators (Sept 2025)**: Escrow settlement cycles mandate funds to be credited to merchant bank accounts within statutory T+2 cycles unless held under written compliance notice. |
-| **Ombudsman Jurisdiction** | **RBI Integrated Ombudsman Scheme (2021)**: Complaints are framed around procedural lapses (absence of written notification, TAT violation) to comply with Scheme exclusions regarding commercial discretion. |
-
----
-
-## ??? Quickstart
-
-### 1. Clone the Repository
-```bash
-git clone https://github.com/Jagrit3500/MerchantOS.git
-cd MerchantOS
-```
-
-### 2. Set Up Virtual Environment & Dependencies
-```bash
+```powershell
 python -m venv venv
-# On Windows:
-.\venv\Scripts\activate
-# On Linux/macOS:
-source venv/bin/activate
-
+.\venv\Scripts\Activate.ps1
 pip install -r requirements.txt
-```
-
-### 3. Configure Environment Variables
-Copy `.env.example` to `.env` and fill in your API keys:
-```bash
-cp .env.example .env
-```
-```env
-GEMINI_API_KEY=your_gemini_api_key_here
-```
-
-### 4. Launch the Entire Platform (One Single Command)
-```bash
+Copy-Item .env.example .env
 python launch.py
 ```
-This automatically launches all 4 services:
-- **Command Center**: `http://localhost:8501`
-- **Agent 1 (KYC Copilot)**: `http://localhost:8502`
-- **Agent 2 (Reconciliation)**: `http://localhost:8503`
-- **Agent 3 (Escalation)**: `http://localhost:8504`
 
----
+The launcher waits for all five services, opens the landing page when enabled, and stops its child processes on `Ctrl+C`.
+Use `python launch.py --no-browser` when starting it from a background process or service.
 
-## ?? Verification & Audit Integrity
-- **100% Policy-Driven**: All recommendations, document checklists, and dispute letters are dynamically linked to ChromaDB document chunks with verifiable citation metadata.
-- **Zero Hardcoding**: All URLs, ports, dates, and file paths are dynamically resolved via system environment variables and Python standard `os.path`.
-- **Pre-tested & Validated**: End-to-end multi-agent workflow verified with live browser testing and recorded demonstration sessions.
+To run only the landing page:
 
----
+```powershell
+python serve_frontend.py
+```
 
-## ?? Hackathon Alignment: Track 3 (AI Revenue Recovery)
-1. **Direct Financial Impact**: Instantly identifies and initiates recovery on trapped capital (e.g., ?94,688 in sample portfolio) that would otherwise sit idle or be written off.
-2. **Defensible Legal Architecture**: Builds mutual confidence between merchants and payment aggregators through transparent procedural compliance rather than adversarial confrontation.
-3. **Autonomous Multi-Agent Collaboration**: From initial diagnosis to settlement reconciliation to statutory escalation, each agent handles a distinct phase of the financial recovery lifecycle.
+## Configuration
 
----
+Copy `.env.example` to `.env`. The example documents:
 
-## ?? License
-This project is licensed under the MIT License.
+- model and API settings;
+- embedding, chunking, and retrieval behavior;
+- service ports and public URLs;
+- provider/workspace identity;
+- fee, tax, scoring, and turnaround rules;
+- escalation deadlines;
+- input paths and interface tuning;
+- landing-page videos and autoplay retry timing;
+- authentication, registration, session lifetime, rate limiting, cookie security, and optional email-domain restrictions.
+
+Operational configuration is centralized in `src/config.py`. Application modules do not read environment variables directly. Restart the services after changing `.env` because settings are loaded at process startup.
+
+Authentication is enabled by default. Accounts and hashed credentials are stored in the ignored local SQLite database configured by `AUTH_DB_PATH`; plaintext passwords are never stored. Set `AUTH_SECURE_COOKIE=1` whenever the landing page and Streamlit services are served over HTTPS. Because the session cookie is shared by hostname across the service ports, use the same hostname (for example, consistently `localhost`) in every configured public URL.
+
+### Google sign-in
+
+Create an OAuth 2.0 **Web application** client under Google Auth Platform > Clients, then add the exact callback shown by `GOOGLE_REDIRECT_URI` to its authorized redirect URIs. Use the web client ID ending in `.apps.googleusercontent.com`; an IAM Workforce OAuth client is a different credential type and will not work with Google Sign-In. For the default local setup, the callback is:
+
+```text
+http://localhost:4173/api/auth/google/callback
+```
+
+Set `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` in `.env`, keep `GOOGLE_AUTH_ENABLED=1`, and restart MerchantOS. The Google button stays visible before setup and explains what is missing; it becomes active automatically once both credentials are present. Production deployments must use an HTTPS landing URL, an exactly matching HTTPS callback, and `AUTH_SECURE_COOKIE=1`.
+
+Google's setup guide: <https://developers.google.com/identity/openid-connect/openid-connect>
+
+Agent 2 publishes successful uploaded reports and manually entered transactions to the configured `SHARED_STATE_PATH`. The explicitly labelled bundled sample stays inside the reconciliation screen and never populates the command center. The command center polls state using `DASHBOARD_REFRESH_INTERVAL_SECONDS`; before the first real reconciliation, every financial metric is zero and the ledger is empty. Completed workflow activity is stored per user in the SQLite database configured by `ACTIVITY_DB_PATH`. Detailed records remain in their originating workspace, while the command center shows only aggregate activity. The local runtime directory is ignored by Git.
+
+The evidence view always performs a fast query-ranked search over the current `.txt` files in `DOCS_DIR`. With `AUTO_FETCH_POLICY_EVIDENCE=1` (the default), Agent 1 also checks the Chroma index and displays the top cosine match as an evidence-relevance score. Its visible evidence remains extractive from the current files; the score is not a diagnosis probability or legal-certainty measure. **Refresh evidence** reruns the semantic check and updates the checked time. Set the option to `0` when startup latency matters more than semantic retrieval; local matching and its weighted term-coverage score remain available.
+
+## Settlement CSV format
+
+Required logical columns are:
+
+```text
+transaction_id, amount, fee, tax, settlement_amount, status, payment_method
+```
+
+Common aliases are accepted. Add `transaction_date` and `settlement_date` to enable turnaround checks. Invalid, negative, non-finite, or duplicate transaction rows are skipped with a visible warning.
+
+## Knowledge-base ingestion
+
+Place supported documents in the configured docs directory, then run:
+
+```powershell
+python ingest_docs.py
+```
+
+The embedding model is configured for offline loading by default. The repository includes a local ChromaDB index; re-ingest after changing source documents or embedding/chunk settings.
+
+The bundled policy summaries were last verified on 12 September 2026 against the official RBI 2025 Payment Aggregator Master Direction and the provider documentation identified inside each source file. They are snapshots, not a live legal feed.
+
+## Audit notes
+
+See [CODEBASE_ANALYSIS.md](CODEBASE_ANALYSIS.md) for the file-by-file architecture review, hardcoded-value boundary, corrections, remaining limitations, and verification results.
