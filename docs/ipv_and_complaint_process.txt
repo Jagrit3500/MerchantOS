@@ -1,95 +1,30 @@
-DOCUMENT: IPV Process and RBI Complaint Filing Guide
-SOURCE: RBI Payment Aggregator Directions 2025 + RBI Integrated Ombudsman Scheme 2021
-COVERAGE: In-Person Verification (IPV), RBI Ombudsman complaint steps
+KYC VERIFICATION AND RBI COMPLAINT CHECKLIST
 
---- SECTION: IN-PERSON VERIFICATION (IPV) ---
+SOURCES: RBI/DPSS/2025-26/141 and Reserve Bank - Integrated Ombudsman Scheme, 2021
+OFFICIAL PA URL: https://www.rbi.org.in/Scripts/BS_ViewMasDirections.aspx?id=12896
+OFFICIAL COMPLAINT PORTAL: https://cms.rbi.org.in
+LAST VERIFIED: 12 September 2026
 
-What is IPV?
-In-Person Verification (IPV) is a process where a Razorpay representative (or authorized third party) verifies the identity of the merchant or business owner face-to-face or via a live video call.
+CONTACT POINT VERIFICATION AND ASSISTED KYC
 
-When can Razorpay demand IPV?
-- IPV is permitted under RBI PA Directions 2025 for high-risk merchant categories
-- Razorpay may request IPV if the merchant's transaction volume exceeds a risk threshold
-- IPV may be required during enhanced due diligence (EDD) for merchants with unusual activity patterns
-- IPV is NOT mandatory for standard KYC submissions if document-based verification is complete
+The 2025 PA Directions define Contact Point Verification as physical verification of the merchant's address or place of business. Paragraph 13 permits CPV as part of the alternative due-diligence process for merchants within the stated turnover limits.
 
-When is IPV NOT valid?
-- Razorpay cannot demand IPV without citing a specific RBI provision
-- IPV cannot substitute for document submission — it is an additional verification, not a replacement
-- If Razorpay demands IPV without justification, the merchant can formally dispute this under RBI PA Directions 2025, Para 3.2
+Paragraph 15 permits a non-bank PA to use authorised agents for specified Digital KYC and assisted V-CIP activities. The PA must conduct due diligence on those agents and retains ultimate responsibility. Do not describe every video call or address check as a mandatory RBI in-person verification.
 
-What to do if IPV is requested:
-1. Ask Razorpay to specify the exact regulatory provision requiring IPV
-2. Schedule the IPV via Razorpay's official video KYC link (provided in their email)
-3. Keep a record of: date, time, Razorpay agent ID, and outcome of the IPV call
-4. If IPV fails due to technical issues on Razorpay's side, request a reschedule in writing
+PREPARE FOR A PROVIDER VERIFICATION
 
-Documents to keep ready during IPV:
-- Original PAN Card
-- Original Aadhaar Card
-- Any business registration certificate (Udyam, GST, MOA/AOA, Partnership Deed)
-- Bank statement (last 3 months) if requested
+Use only the provider's official dashboard, application, or verified communication. Confirm the requested documents, appointment details, and purpose. Keep the original documents available where instructed, record the completion date and reference, and never disclose a password or OTP to an agent.
 
-IPV TAT (Turnaround Time):
-- Razorpay must complete IPV review within 3 business days of completion
-- If IPV result is not communicated within 3 business days, escalate to Grievance Officer
+PRIOR COMPLAINT
 
---- SECTION: RBI INTEGRATED OMBUDSMAN COMPLAINT FILING ---
+Before considering the RBI Ombudsman, make a clear written complaint to the entity using its published support or grievance route. Keep proof of submission and the response. Paragraph 8 of the PA Directions requires an officer for merchant issues and a published escalation matrix, but it does not set a universal response deadline for every merchant grievance.
 
-What is the RBI Integrated Ombudsman?
-The RBI Integrated Ombudsman Scheme 2021 provides a single-window redressal mechanism for complaints against banks and payment service providers including Payment Aggregators (PAs) like Razorpay.
+OMBUDSMAN ELIGIBILITY CHECK
 
-URL to file complaint: https://cms.rbi.org.in
+The Reserve Bank - Integrated Ombudsman Scheme, 2021 applies to complaints about deficiency in service by covered regulated entities. The complainant generally must first complain in writing to the regulated entity. A complaint may be filed after an unsatisfactory rejection or when the entity has not replied within one month.
 
-When can you escalate to RBI Ombudsman?
-- After 30 days of complaint to Razorpay with no resolution
-- If Razorpay rejects your complaint and you are not satisfied with the response
-- If Razorpay does not respond within the stipulated time (5 business days for standard issues, 4 hours for settlement holds)
-- Complaint is FREE OF CHARGE — no fees required
+Before filing, confirm that the entity is covered, the complainant qualifies as its customer for the relevant service, the complaint is not excluded or already pending in another forum, and the filing is within the Scheme's limitation period. Use the current portal prompts rather than assuming a particular category will appear.
 
-How to file a complaint with RBI Ombudsman (step by step):
-1. Visit https://cms.rbi.org.in
-2. Click "File a Complaint"
-3. Select "Payment Aggregator" as the entity type
-4. Enter Razorpay as the regulated entity
-5. Provide:
-   - Your merchant ID
-   - Date the problem started
-   - Description of the issue (be specific — cite hold reason, RBI provision violated)
-   - All prior communication with Razorpay (ticket numbers, emails)
-   - Amount involved (if settlement hold)
-6. Attach all supporting documents
-7. Submit — you receive an acknowledgment number
+FILING RECORD
 
-What information to include in your complaint:
-- Razorpay's failure to provide written notice within 24 hours (if applicable)
-- Specific RBI provision being violated (e.g., Para 4.3(ii) for wrong doc demand)
-- TAT violation (if settlement held beyond 2 business days without reason)
-- Excess fee charged (with calculation)
-- All merchant-side documents already submitted
-
-RBI Ombudsman powers:
-- Can direct Razorpay to settle the complaint within 30 days
-- Can award compensation up to Rs 20 lakh for consequential losses
-- Decision is binding on Razorpay if merchant accepts
-
-Complaint TAT at Ombudsman:
-- RBI Ombudsman must acknowledge within 3 days
-- Resolution within 30 days of receipt of all documents
-
---- SECTION: GRIEVANCE OFFICER ESCALATION ---
-
-Razorpay Grievance Officer contact:
-- Email: grievance.officer@razorpay.com
-- Response time: Within 30 days (mandated by RBI)
-
-When to escalate to Grievance Officer:
-- After 5 business days with no resolution from Razorpay support
-- Before escalating to RBI Ombudsman
-
-What to include in Grievance Officer email:
-- Original support ticket number
-- Date filed and current status
-- Specific RBI provision being violated
-- Amount being disputed (if applicable)
-- Request for written justification for the hold
+Prepare the complainant and entity details, prior complaint and response, chronology, transaction references, amount, requested relief, and supporting documents. State only verifiable facts. The Ombudsman process is cost-free, but MerchantOS cannot predict maintainability, compensation, or resolution time.
