@@ -1,61 +1,46 @@
-﻿RBI MASTER DIRECTION ON REGULATION OF PAYMENT AGGREGATOR (PA)
-Reference: RBI/DPSS/2025-26/141 | Issued: September 15, 2025
+RBI PAYMENT AGGREGATOR DIRECTIONS 2025 - VERIFIED EXCERPT GUIDE
 
-OVERVIEW AND SCOPE
+SOURCE: Reserve Bank of India (Regulation of Payment Aggregators) Directions, 2025
+REFERENCE: RBI/DPSS/2025-26/141, issued 15 September 2025
+OFFICIAL URL: https://www.rbi.org.in/Scripts/BS_ViewMasDirections.aspx?id=12896
+LAST VERIFIED: 12 September 2026
 
-This Master Direction consolidates all RBI guidelines on Payment Aggregators (PAs). It applies to PA-Online (PA-O), PA-Physical (PA-P), and PA-Cross Border (PA-CB) entities.
+SCOPE AND CAUTION
 
-KEY COMPLIANCE DEADLINE: All Payment Aggregators must complete re-KYC verification of existing merchants by September 15, 2026. Merchants not verified by this date may have payment services paused.
+The Directions regulate payment aggregators. They do not create a complete merchant remedies code, a universal merchant document checklist, or a fixed settlement-hold resolution deadline. MerchantOS uses these provisions as source context and does not replace the merchant agreement, the provider's current policy, the RBI KYC Direction, tax advice, or legal advice.
 
-SECTION 2: AUTHORIZATION REQUIREMENTS
+DISPUTE MANAGEMENT - PARAGRAPH 8
 
-Non-bank entities must obtain authorisation from RBI under the Payment and Settlement Systems Act, 2007. Net Worth: Minimum Rs. 15 crore at application, Rs. 25 crore by end of financial year 3.
+A payment aggregator must maintain a mechanism for payment-related disputes and refund timelines. Agreements among the payment aggregator, merchants, acquiring banks, and other stakeholders must clearly allocate responsibilities for refunds, failed transactions, grievance redressal, and reconciliation. The payment aggregator must disclose its merchant policies, privacy policy, and other terms. It must appoint an officer for merchant issues and prominently publish the escalation matrix.
 
-SECTION 3: ESCROW AND SETTLEMENT TIMELINES
+The Directions do not prescribe a universal five-day or thirty-day deadline for every merchant complaint. Use the provider's published escalation matrix and preserve the original complaint and response.
 
-PAs must maintain a nodal or escrow account. Settlement: T+1 for domestic, up to T+7 for international/cross-border due to correspondent banking. Holding funds beyond settlement periods without written communication is a violation.
+SECURITY AND RISK - PARAGRAPH 9
 
-SECTION 4: MERCHANT DUE DILIGENCE AND KYC REQUIREMENTS
+Payment aggregators must maintain risk-management, fraud-detection, and information-security controls. Paragraph 9 does not state a merchant evidence checklist or establish that any particular signal caused an account restriction. If a provider identifies a risk review, ask it to specify the trigger and remediation criteria, then submit relevant transaction records. The Directions do not publish fixed Visa or Mastercard chargeback thresholds, and MerchantOS must not represent a card-network threshold as an RBI threshold.
 
-Para 4.2 - MANDATORY KYC FOR ALL MERCHANTS: (1) Valid identity proof of the business entity and promoters/directors. (2) Valid address proof. (3) Proof of business existence. (4) Bank account in the name of the business entity or proprietor.
+MERCHANT DUE DILIGENCE - PARAGRAPH 13
 
-Para 4.3 - SOLE PROPRIETORSHIP:
-Para 4.3(i) - Registered Sole Proprietors: Must provide a government-issued registration certificate such as GST Certificate, Udyam Registration Certificate, IEC Code, or Shop and Establishment Certificate, along with PAN and address proof.
+A payment aggregator must conduct customer due diligence of merchants under the RBI Master Direction - Know Your Customer. With merchant consent, it should retrieve the merchant's KYC record from CKYCR. If no current CKYCR record is available, other KYC mechanisms may be used.
 
-Para 4.3(ii) - Unregistered Sole Proprietors: GSTIN (GST Certificate) is NOT mandatory. An unregistered sole proprietor may provide ANY ONE of the following as business proof: (a) Bank statement of the last 6 months, (b) Udyam Registration Certificate, (c) IEC - Importer Exporter Code, (d) MSME certificate. PAN Card and Aadhaar Card are mandatory.
+For a merchant whose annual turnover does not exceed Rs 40 lakh, or annual export turnover does not exceed Rs 5 lakh, paragraph 13(b) permits an alternative process: verify PAN or Form 60, conduct Contact Point Verification, and obtain and verify the applicable officially valid document or equivalent e-document. Eligibility and the exact document depend on the merchant and the KYC Direction.
 
-NOTE FOR PAYMENT AGGREGATORS: Demanding GST Certificate from unregistered sole proprietors when the merchant can provide alternative business proof as listed in Para 4.3(ii) is NOT in compliance with these directions. A PA cannot make GST mandatory for this category of merchant.
+The PA Directions do not contain the previously attributed paragraphs 4.3(i), 4.3(ii), 4.4, 4.5, or 4.6 setting separate GST and document lists for every merchant type. A provider may still request GST or other business evidence under its current onboarding policy, the merchant's risk profile, or other applicable law. Ask the provider to identify the basis and acceptable alternatives.
 
-Para 4.4 - PARTNERSHIP FIRMS: Mandatory: Firm PAN Card, Partnership Deed, PAN and Aadhaar of all partners, bank account in firm name. Any one of: GST Certificate, Bank Statement (6 months).
+ASSISTED DUE DILIGENCE - PARAGRAPH 15
 
-Para 4.5 - PRIVATE LIMITED AND PUBLIC LIMITED COMPANIES: Mandatory: Certificate of Incorporation, Company PAN Card, MOA and AOA, Board Resolution, Director PAN and Aadhaar. For Public Ltd: List of beneficial owners above 10%. Any one of: GST Certificate or audited financials.
+A non-bank payment aggregator may use authorised agents for specified Digital KYC and assisted V-CIP activities. The payment aggregator retains ultimate responsibility for due diligence. Contact Point Verification is not the same as an RBI-mandated in-person interview for every merchant.
 
-Para 4.6 - NGO / TRUST / SOCIETY: Mandatory: Trust Deed or Society Registration Certificate, PAN Card, Trustee PAN and Aadhaar. Any one of: 12A/80G certificate, FCRA certificate for foreign donations. GST Certificate is generally NOT required for NGOs that are exempt from GST.
+SETTLEMENT AND ESCROW - PARAGRAPH 16 AND TABLE 1
 
-Para 4.7 - IN-PERSON VERIFICATION (IPV): PAs must conduct IPV of merchants using their own employees. Cannot be outsourced to third-party agencies. Video-based Customer Identification Process (V-CIP) is permitted where applicable.
+A non-bank payment aggregator must keep merchant collections in the prescribed escrow account. The credit timeline to a merchant's account is governed by the agreement between the payment aggregator and merchant. That agreement must be fair and equitable and transparently state settlement timelines.
 
-Para 4.8 - CENTRAL KYC REGISTRY (CKYCR): PAs must check the Central KYC Registry for existing records before requesting fresh documents from merchants.
+The 2025 Directions do not impose a universal statutory T+2 settlement cycle. MerchantOS compares a report against an operator-configured expectation. The provider's dashboard and merchant agreement control the applicable schedule.
 
-SECTION 5: RISK MANAGEMENT AND SETTLEMENT HOLDS
+TRANSITION DATES
 
-Para 5.1 - PERMITTED REASONS FOR HOLDING SETTLEMENTS: (a) Pending KYC completion. (b) Elevated chargeback or dispute ratio triggering Card Network monitoring programs (e.g. Visa VDMP at 0.9% or Mastercard ECP at 1.0%) or aggregator risk thresholds. (c) Unusual transaction velocity or sudden volume spikes. (d) Regulatory or law enforcement agency (LEA) directive. (e) Suspected fraudulent activity with documented evidence.
+Merchants onboarded through 31 December 2025 must be brought into compliance with paragraph 13 within one year from 15 September 2025. From 1 January 2026, new merchants should be onboarded under the due-diligence requirements in the Directions.
 
-Para 5.2 - MANDATORY COMMUNICATION ON HOLDS: When holding funds, the PA MUST: (1) Inform the merchant in writing within 24 hours. (2) State the specific reason for the hold. (3) Provide a list of actions required to resolve the hold. (4) Provide an estimated resolution timeline. Failure to communicate is itself a violation of these directions.
+WHAT TO REQUEST FROM A PROVIDER
 
-Para 5.3 - CHARGEBACK MONITORING & CARD NETWORK PROGRAMS: Chargeback ratio thresholds are established primarily by Card Networks (such as Visa Dispute Monitoring Program - VDMP at 0.9% / 100 disputes, and Mastercard Excessive Chargeback Program - ECP at 1.0%). While RBI Master Directions require PAs to establish robust risk management and fraud prevention frameworks, PAs monitor merchant chargeback trends against card network rules. When settlements are held for dispute volume, merchants are entitled to provide proof of delivery, fulfillment logs, and customer communication to substantiate legitimate sales and request exclusion of isolated fraud from aggregate ratios.
-
-Para 5.4 - RESOLUTION TIMELINES (TAT): KYC holds: Must be resolved within 7 business days of merchant submitting complete documents. Risk holds: Initial review within 48 hours, full resolution within 15 business days. LEA holds: Subject to the terms of the competent authority order.
-
-SECTION 6: MERCHANT RIGHTS AND GRIEVANCE REDRESSAL
-
-Para 6.1 - MERCHANT RIGHTS: Merchants have the right to: (a) Written communication stating the reason for any account hold. (b) A clear list of documents required and the legal basis for each requirement. (c) Resolution within prescribed TAT timelines. (d) Escalation to the Grievance Officer if not resolved.
-
-Para 6.2 - GRIEVANCE OFFICER: Every PA must appoint a Grievance Officer. Name, contact details, and email must be displayed on the PA website. Grievance Officer must respond within 30 days of receiving a complaint.
-
-Para 6.3 - RBI INTEGRATED OMBUDSMAN (PROCEDURAL JURISDICTION): If a grievance is not resolved by the Payment Aggregator within 30 days, the merchant may escalate to the RBI Integrated Ombudsman at https://cms.rbi.org.in. IMPORTANT JURISDICTIONAL LIMITATION: The Ombudsman Scheme excludes disputes that challenge a regulated entity's internal commercial risk judgment or underwriting appetite. However, complaints based on PROCEDURAL VIOLATIONS (such as failure to communicate reasons for fund hold in writing within 24 hours, withholding settlements beyond statutory TAT without written notice, or refusing to accept statutory KYC alternatives specified in Para 4.3) are fully maintainable.
-
-SECTION 7: PROHIBITED PRACTICES
-
-PAs CANNOT: (a) Demand documents not specified in these directions without written justification. (b) Hold settlements beyond TAT without written communication. (c) Charge merchants separately for KYC verification. (d) Refuse to provide the reason for an account hold in writing. (e) Block an account permanently without due process. (f) Make GST Certificate mandatory for all merchants irrespective of their registration status.
-
-IMPORTANT DATES: September 15, 2025: Directions issued. January 1, 2026: New merchants must be KYC-verified before onboarding. September 15, 2026: All existing merchants must complete re-KYC. After September 15, 2026: Non-compliant merchants may have payment services paused.
+Ask for the dashboard status, the reason for the restriction, the specific remediation items, the applicable merchant-policy or agreement clause, the expected review or settlement date, the merchant-grievance contact, and the escalation matrix. Phrase these as requests unless a verified source creates a specific entitlement.
