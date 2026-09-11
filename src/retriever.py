@@ -2,8 +2,13 @@ import sys
 import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from src.embedder import get_chroma_client, get_embedding, get_or_create_collection
-from src.config import TOP_K_RESULTS, SIMILARITY_THRESHOLD
+from src.embedder import (
+    get_chroma_client,
+    get_embedding,
+    get_or_create_collection,
+    reconnect_chroma_client,
+)
+from src import config
 
 
 def get_dynamic_k(total_chunks: int) -> int:
@@ -11,23 +16,27 @@ def get_dynamic_k(total_chunks: int) -> int:
     Dynamically calculate k based on total chunks in DB.
     More chunks = wider search net needed.
     """
-    if total_chunks <= 40:
-        return 5
-    elif total_chunks <= 150:
-        return 8
-    elif total_chunks <= 450:
-        return 15
+    if total_chunks <= config.RETRIEVAL_SMALL_MAX:
+        return config.RETRIEVAL_K_SMALL
+    elif total_chunks <= config.RETRIEVAL_MEDIUM_MAX:
+        return config.RETRIEVAL_K_MEDIUM
+    elif total_chunks <= config.RETRIEVAL_LARGE_MAX:
+        return config.RETRIEVAL_K_LARGE
     else:
-        return 20
+        return config.RETRIEVAL_K_XL
 
 
-def retrieve_chunks(query: str, k: int = TOP_K_RESULTS) -> tuple[list[dict], int]:
+def retrieve_chunks(
+    query: str,
+    k: int | None = None,
+    reconnect: bool = False,
+) -> tuple[list[dict], int]:
     """
     Retrieve top-k most relevant chunks for a query.
     Uses dynamic k based on collection size.
     Returns (chunks, actual_k_used)
     """
-    client = get_chroma_client()
+    client = reconnect_chroma_client() if reconnect else get_chroma_client()
     collection = get_or_create_collection(client)
 
     total_chunks = collection.count()
@@ -37,8 +46,8 @@ def retrieve_chunks(query: str, k: int = TOP_K_RESULTS) -> tuple[list[dict], int
         return [], 0
 
     # Use dynamic k, bounded by total chunks
-    dynamic_k = get_dynamic_k(total_chunks)
-    actual_k = min(dynamic_k, total_chunks)
+    requested_k = k if k is not None else max(config.TOP_K_RESULTS, get_dynamic_k(total_chunks))
+    actual_k = min(requested_k, total_chunks)
 
     query_embedding = get_embedding(query)
 
@@ -53,8 +62,9 @@ def retrieve_chunks(query: str, k: int = TOP_K_RESULTS) -> tuple[list[dict], int
 
     chunks = []
     for i in range(len(results["documents"][0])):
-        distance = results["distances"][0][i]
-        similarity = 1 - (distance / 2)
+        distance = float(results["distances"][0][i])
+        # The collection uses cosine space, where distance = 1 - cosine similarity.
+        similarity = max(min(1.0 - distance, 1.0), -1.0)
 
         chunks.append({
             "text": results["documents"][0][i],
@@ -79,19 +89,20 @@ def filter_by_threshold(
     Filter chunks below similarity threshold.
     Uses provided threshold or falls back to config.
     """
-    active_threshold = threshold if threshold is not None else SIMILARITY_THRESHOLD
+    active_threshold = threshold if threshold is not None else config.SIMILARITY_THRESHOLD
     return [c for c in chunks if c["similarity"] >= active_threshold]
 
 
 def retrieve_and_filter(
     query: str,
-    threshold: float | None = None
+    threshold: float | None = None,
+    reconnect: bool = False,
 ) -> tuple[list[dict], bool, int]:
     """
     Full retrieval pipeline with evidence filtering.
     Returns (chunks, is_answerable, actual_k_used)
     """
-    chunks, actual_k = retrieve_chunks(query)
+    chunks, actual_k = retrieve_chunks(query, reconnect=reconnect)
 
     if not chunks:
         return [], False, actual_k
@@ -108,7 +119,7 @@ def format_context(chunks: list[dict]) -> str:
     """
     context_parts = []
     for chunk in chunks:
-        context_parts.append(f"[Page {chunk['page']}]\n{chunk['text']}")
+        context_parts.append(f"[Source: {chunk['source']}, Page {chunk['page']}]\n{chunk['text']}")
     return "\n\n---\n\n".join(context_parts)
 
 
