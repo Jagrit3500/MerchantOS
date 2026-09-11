@@ -1,16 +1,16 @@
 [server]
-fileWatcherType = "none"
+fileWatcherType = "poll"
 headless = true
-enableCORS = false
-enableXsrfProtection = false
+enableCORS = true
+enableXsrfProtection = true
 maxUploadSize = 50
 
 [theme]
 base = "light"
-primaryColor = "#6366f1"
-backgroundColor = "#f8fafc"
-secondaryBackgroundColor = "#ffffff"
-textColor = "#0f172a"
+primaryColor = "#176B50"
+backgroundColor = "#F3F1EB"
+secondaryBackgroundColor = "#FFFEFB"
+textColor = "#17211D"
 font = "sans serif"
 
 [browser]
