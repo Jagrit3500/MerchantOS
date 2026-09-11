@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="MerchantOS helps Indian merchants diagnose holds, reconcile settlements, and prepare evidence-backed escalations." />
+    <title>MerchantOS — Recover revenue with clarity</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23176b50'/%3E%3Cpath d='M17 45V19h7l8 13 8-13h7v26h-7V30l-8 12-8-12v15z' fill='%23fffefb'/%3E%3C/svg%3E" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,500;6..72,600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="landing.css?v=editorial-1" />
+    <script src="/runtime-config.js"></script>
+    <script src="landing.js" defer></script>
+  </head>
+  <body>
+    <main>
+      <section class="hero" id="home" aria-labelledby="hero-title">
+        <video
+          class="hero__video js-autoplay-video"
+          autoplay
+          muted
+          loop
+          playsinline
+          preload="auto"
+          aria-hidden="true"
+        >
+          <source data-video-source="hero" type="video/mp4" />
+        </video>
+        <div class="hero__scrim" aria-hidden="true"></div>
+
+        <header class="site-header">
+          <a class="brand" href="#home" aria-label="MerchantOS home">
+            <span class="brand__mark" aria-hidden="true">
+              <svg viewBox="0 0 38 38" role="presentation">
+                <circle cx="19" cy="19" r="19" fill="#111111" />
+                <ellipse
+                  cx="19"
+                  cy="19"
+                  rx="10"
+                  ry="4"
+                  fill="#ffffff"
+                  transform="rotate(-25 19 19)"
+                />
+              </svg>
+            </span>
+            <span class="brand__word">merchant<span>os</span></span>
+          </a>
+
+          <nav class="desktop-nav" aria-label="Primary navigation">
+            <a href="#home">Home</a>
+            <a href="#about">How it works</a>
+            <a href="#" data-app="home">Dashboard</a>
+          </nav>
+
+          <a class="header-contact" href="#" data-app="home">
+            <svg viewBox="0 0 17 13" aria-hidden="true">
+              <rect x="0.75" y="0.75" width="15.5" height="11.5" rx="0.75" />
+              <path d="m1.4 2 7.1 5.2L15.6 2" />
+            </svg>
+            <span>Open workspace</span>
+          </a>
+
+          <button
+            class="menu-toggle"
+            type="button"
+            aria-label="Open navigation"
+            aria-controls="mobile-menu"
+            aria-expanded="false"
+          >
+            <span></span>
+            <span></span>
+            <span></span>
+          </button>
+
+          <nav class="mobile-menu" id="mobile-menu" aria-label="Mobile navigation" hidden>
+            <a href="#home">Home</a>
+            <a href="#about">How it works</a>
+            <a href="#" data-app="home">Dashboard</a>
+          </nav>
+        </header>
+
+        <div class="hero__content">
+          <h1 id="hero-title">
+            <span>Recover</span>
+            <span>Every</span>
+            <span>Settlement</span>
+            <span class="headline-indent">With</span>
+            <span class="headline-indent">Clear</span>
+            <span class="headline-indent headline-accent">Evidence</span>
+          </h1>
+        </div>
+
+        <div class="hero__action">
+          <a class="chamfer-button" href="#" data-app="home">Open dashboard</a>
+          <span class="hero__action-line" aria-hidden="true"></span>
+        </div>
+      </section>
+
+      <section class="about" id="about" aria-labelledby="about-title">
+        <div class="about__copy">
+          <h2 id="about-title">
+            <span>One</span>
+            <span class="about-indent headline-accent">Recovery desk</span>
+          </h2>
+          <p>
+            MerchantOS brings fund-hold diagnosis, settlement reconciliation, and formal escalation into one focused workspace. Trace every exception, prepare the right documents, and turn a difficult payment-operations case into a clear next action.
+          </p>
+          <a class="chamfer-button" href="#" data-app="agent1">Start diagnosis</a>
+        </div>
+
+        <div class="about__media">
+          <video
+            class="about__video js-autoplay-video"
+            autoplay
+            muted
+            loop
+            playsinline
+            preload="auto"
+            aria-hidden="true"
+          >
+            <source data-video-source="about" type="video/mp4" />
+          </video>
+          <div class="about__tint" aria-hidden="true"></div>
+        </div>
+      </section>
+    </main>
+
+    <dialog class="auth-dialog" id="auth-dialog" aria-labelledby="auth-title">
+      <div class="auth-shell">
+        <button class="auth-close" type="button" aria-label="Close sign in">×</button>
+        <div class="auth-brand" aria-hidden="true"><span></span></div>
+        <p class="auth-eyebrow">SECURE MERCHANT WORKSPACE</p>
+        <h2 id="auth-title">Welcome to MerchantOS.</h2>
+        <p class="auth-intro">Sign in to keep your recovery workspace and case tools protected.</p>
+
+        <button class="google-auth-button" type="button" data-google-auth>
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path fill="#4285f4" d="M21.6 12.2c0-.7-.1-1.4-.2-2H12v3.9h5.4a4.6 4.6 0 0 1-2 3v2.6h3.3c1.9-1.8 2.9-4.4 2.9-7.5Z" />
+            <path fill="#34a853" d="M12 22c2.7 0 5-.9 6.7-2.3l-3.3-2.6c-.9.6-2.1 1-3.4 1-2.6 0-4.8-1.8-5.6-4.1H3v2.7A10 10 0 0 0 12 22Z" />
+            <path fill="#fbbc05" d="M6.4 14a6 6 0 0 1 0-4V7.3H3a10 10 0 0 0 0 9.4L6.4 14Z" />
+            <path fill="#ea4335" d="M12 5.9c1.5 0 2.8.5 3.8 1.5l2.9-2.9A9.7 9.7 0 0 0 3 7.3L6.4 10c.8-2.3 3-4.1 5.6-4.1Z" />
+          </svg>
+          <span>Continue with Google</span>
+          <i aria-hidden="true">→</i>
+        </button>
+        <p class="google-auth-note" data-google-auth-note hidden></p>
+        <div class="auth-divider"><span>or continue with email</span></div>
+
+        <div class="auth-tabs" role="tablist" aria-label="Account access">
+          <button type="button" role="tab" aria-selected="true" data-auth-tab="signin">Sign in</button>
+          <button type="button" role="tab" aria-selected="false" data-auth-tab="register">Create account</button>
+        </div>
+
+        <form class="auth-form" data-auth-form="signin">
+          <label>Email address<input name="email" type="email" autocomplete="email" required /></label>
+          <label>Password<input name="password" type="password" autocomplete="current-password" required /></label>
+          <button class="auth-submit" type="submit">Sign in <span>→</span></button>
+        </form>
+
+        <form class="auth-form" data-auth-form="register" hidden>
+          <label>Your name<input name="displayName" type="text" autocomplete="name" required /></label>
+          <label>Email address<input name="email" type="email" autocomplete="email" required /></label>
+          <label>Password<input name="password" type="password" autocomplete="new-password" aria-describedby="password-guidance" required /></label>
+          <small id="password-guidance">Use a strong password containing letters and numbers.</small>
+          <button class="auth-submit" type="submit">Create secure account <span>→</span></button>
+        </form>
+        <p class="auth-status" role="status" aria-live="polite"></p>
+        <p class="auth-privacy"><span aria-hidden="true">◆</span> Passwords are hashed locally. Google credentials never pass through MerchantOS.</p>
+      </div>
+    </dialog>
+  </body>
+</html>
