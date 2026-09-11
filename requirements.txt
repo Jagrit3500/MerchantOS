@@ -1,10 +1,9 @@
 streamlit>=1.40.0
 chromadb>=0.4.0
-google-genai>=0.1.0
+google-auth>=2.38.0
+groq>=0.11.0
 pandas>=2.0.0
-pydantic>=2.0.0
 python-dotenv>=1.0.0
 requests>=2.31.0
 sentence-transformers>=2.2.0
 PyMuPDF>=1.23.0
-altair>=5.0.0
