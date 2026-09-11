@@ -5,13 +5,12 @@ Uses source-prefixed chunk IDs to prevent duplicates across multiple docs.
 Run once before starting the app: python ingest_docs.py
 """
 import sys, os
+from collections import Counter
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from src.pdf_parser import parse_pdf
 from src.embedder import embed_chunks
-from src.config import CHUNK_SIZE, CHUNK_OVERLAP
-
-DOCS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "docs")
+from src import config
 
 
 def parse_txt(file_path: str) -> list[dict]:
@@ -24,7 +23,7 @@ def parse_txt(file_path: str) -> list[dict]:
 
     source = os.path.basename(file_path)
     # Sanitize source for use in ID (alphanumeric + underscore, max 20 chars)
-    source_prefix = "".join(c if c.isalnum() else "_" for c in source.split(".")[0])[:20]
+    source_prefix = "".join(c if c.isalnum() else "_" for c in source.split(".")[0])[:config.INGEST_SOURCE_ID_MAX_LENGTH]
 
     chunks = []
     start = 0
@@ -32,7 +31,7 @@ def parse_txt(file_path: str) -> list[dict]:
     page_num = 1
 
     while start < len(full_text):
-        end = start + CHUNK_SIZE
+        end = start + config.CHUNK_SIZE
         chunk_text = full_text[start:end].strip()
         if chunk_text:
             chunks.append({
@@ -46,12 +45,12 @@ def parse_txt(file_path: str) -> list[dict]:
                 "char_end": end,
             })
             chunk_id += 1
-            if chunk_id % 3 == 0:
+            if chunk_id % config.TXT_CHUNKS_PER_PAGE == 0:
                 page_num += 1
 
         if end >= len(full_text):
             break
-        start = end - CHUNK_OVERLAP
+        start = end - config.CHUNK_OVERLAP
 
     return chunks
 
@@ -61,7 +60,15 @@ def ingest_all():
     print("MerchantOS - Document Ingestion")
     print("=" * 60)
 
-    files = os.listdir(DOCS_DIR)
+    if config.CHUNK_OVERLAP >= config.CHUNK_SIZE:
+        raise ValueError("CHUNK_OVERLAP must be smaller than CHUNK_SIZE")
+    if config.TXT_CHUNKS_PER_PAGE < 1:
+        raise ValueError("TXT_CHUNKS_PER_PAGE must be at least 1")
+
+    if not os.path.isdir(config.DOCS_DIR):
+        print(f"ERROR: Document directory does not exist: {config.DOCS_DIR}")
+        return False
+    files = os.listdir(config.DOCS_DIR)
     pdfs = sorted([f for f in files if f.endswith(".pdf")])
     txts = sorted([f for f in files if f.endswith(".txt")])
     all_docs = pdfs + txts
@@ -74,7 +81,7 @@ def ingest_all():
     all_chunks = []
 
     for doc in pdfs:
-        path = os.path.join(DOCS_DIR, doc)
+        path = os.path.join(config.DOCS_DIR, doc)
         print(f"\n[PDF] Processing: {doc}")
         try:
             chunks = parse_pdf(path)
@@ -84,11 +91,12 @@ def ingest_all():
             print(f"      ERROR: {e}")
 
     for doc in txts:
-        path = os.path.join(DOCS_DIR, doc)
+        path = os.path.join(config.DOCS_DIR, doc)
         print(f"\n[TXT] Processing: {doc}")
         try:
             chunks = parse_txt(path)
-            print(f"      Parsed: {len(chunks)} chunks | ID prefix: {chunks[0]['chunk_id'][:25]}...")
+            prefix = chunks[0]["chunk_id"][:25] if chunks else "none"
+            print(f"      Parsed: {len(chunks)} chunks | ID prefix: {prefix}...")
             all_chunks.extend(chunks)
         except Exception as e:
             print(f"      ERROR: {e}")
@@ -101,8 +109,8 @@ def ingest_all():
     ids = [c["chunk_id"] for c in all_chunks]
     unique_ids = set(ids)
     if len(ids) != len(unique_ids):
-        dupes = [id for id in ids if ids.count(id) > 1]
-        print(f"ERROR: Duplicate chunk IDs found: {set(dupes)}")
+        dupes = sorted(chunk_id for chunk_id, count in Counter(ids).items() if count > 1)
+        print(f"ERROR: Duplicate chunk IDs found: {dupes}")
         return False
 
     print(f"\nTotal chunks: {len(all_chunks)} | Unique IDs: {len(unique_ids)} | ID check: OK")
