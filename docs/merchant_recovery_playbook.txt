@@ -1,100 +1,48 @@
-﻿MERCHANT FUND RECOVERY AND ESCALATION PLAYBOOK
-Source: RBI Integrated Ombudsman Scheme 2021 + RBI PA Directions 2025 + Legal Precedents
+MERCHANT RECOVERY PLAYBOOK - EVIDENCE FIRST
 
-SECTION A: UNDERSTANDING YOUR RIGHTS AS A MERCHANT
+SOURCES: RBI/DPSS/2025-26/141, provider public documentation, merchant agreement, and case records
+LAST VERIFIED: 12 September 2026
 
-Under Indian law, a Payment Aggregator (PA) like Razorpay is a regulated entity under the RBI Payment and Settlement Systems Act 2007. You, as a merchant, have enforceable legal rights.
+STEP 1 - PRESERVE THE RECORD
 
-YOUR CORE RIGHTS:
-1. Right to written communication: Any hold or freeze must be communicated in writing within 24 hours (RBI PA Directions 2025, Section 5.2).
-2. Right to know the reason: Razorpay must tell you EXACTLY why your funds are held, citing the specific regulatory provision.
-3. Right to resolution timeline: Razorpay must give you a clear timeline for resolving the hold.
-4. Right to dispute document demands: If Razorpay asks for a document not required by RBI, you can formally dispute it.
-5. Right to escalation: If unresolved in 30 days, you can escalate to the RBI Ombudsman at zero cost.
+Capture the exact dashboard status, affected amount, transaction and settlement IDs, dates, and screenshots. Save every email and support response. Export the provider report and obtain the matching bank statement.
 
-SECTION B: STEP-BY-STEP RECOVERY GUIDE
+STEP 2 - CHECK THE CONTRACTUAL BASELINE
 
-STEP 1 - DOCUMENT THE HOLD (Day 0-1):
-- Screenshot your Razorpay dashboard showing the account status
-- Note the exact date the hold started and the amount being held
-- Save all emails from Razorpay regarding the hold
-- Calculate the financial impact: held amount x daily revenue loss
+Confirm the settlement schedule and pricing displayed for the account. Under paragraph 16 and Table 1 of RBI/DPSS/2025-26/141, the PA-merchant agreement should fairly and transparently state settlement timing. A public default schedule may differ from the schedule assigned to a particular account.
 
-STEP 2 - SUBMIT A FORMAL SUPPORT TICKET (Day 1-2):
-- Go to https://razorpay.com/support/ and create a ticket
-- Subject line: "Settlement Hold - Merchant ID [XXX] - Request for Written Explanation"
-- Attach: all supporting documents, RBI regulation citations
-- Request: written reason, list of required actions, resolution timeline
-- Keep ticket number for escalation reference
+STEP 3 - SUBMIT A PRECISE SUPPORT REQUEST
 
-STEP 3 - SUBMIT REQUIRED DOCUMENTS (Day 2-5):
-- Submit exactly what RBI requires for your merchant category
-- Do NOT submit documents not required (like GST if you are unregistered)
-- If Razorpay insists on GST from an unregistered entity, cite RBI Para 4.3(ii) formally
-- Upload via Razorpay dashboard or email to kyc@razorpay.com
+List each affected transaction. Ask for the reason, remediation items, policy or agreement clause, expected review date, and reconciliation statement. Attach only relevant evidence and do not include passwords, OTPs, or unnecessary customer personal data.
 
-STEP 4 - ESCALATE TO GRIEVANCE OFFICER (Day 5-7, if unresolved):
-- Email: grievance.officer@razorpay.com
-- Subject: "Formal Grievance - Unresolved Settlement Hold - Merchant ID [XXX]"
-- Include: original ticket number, date of submission, all correspondence, financial impact statement
-- Per RBI, Grievance Officer must acknowledge within 48 hours and resolve within 30 days
+UNUSUAL VOLUME OR DISPUTE SIGNALS
 
-STEP 5 - RBI INTEGRATED OMBUDSMAN (Day 30+, if unresolved):
-- URL: https://cms.rbi.org.in
-- File under: Payment and Settlement System complaint
-- PA Name: Razorpay Software Private Limited
-- Attach: all previous correspondence, Razorpay ticket number, Grievance Officer email
-- RBI will investigate and can order fund release with compensation
+A reported transaction-volume change or chargeback does not by itself establish why an account was restricted. Ask the provider whether the events are related and which provider or card-network rule applies. Preserve affected transaction and order IDs, dispute notices, invoices, fulfilment or service-completion records, customer communications, refunds, and a factual explanation of unusual business activity where relevant.
 
-SECTION C: SAMPLE COMPLAINT LANGUAGE
+STEP 4 - COMPLETE OR CLARIFY KYC
 
-For GST Dispute (Unregistered Merchant):
-"I am an unregistered sole proprietor and hereby dispute Razorpay's demand for a GST Certificate. Per RBI PA Master Directions 2025, Section 4.3(ii), unregistered sole proprietors are NOT required to provide GSTIN. I am providing the alternative documents listed in Para 4.3(ii). Kindly confirm acceptance within 48 hours or I will escalate to the RBI Ombudsman."
+Use the provider's current business-type checklist. Paragraph 13 of RBI/DPSS/2025-26/141 requires merchant due diligence under the RBI KYC Direction and describes CKYCR retrieval. It also provides a simplified alternative process for eligible merchants within stated turnover limits. It does not itself provide a GST checklist for each merchant type.
 
-For Unreasonable Hold Duration:
-"My account has been on hold for [X] days without resolution. Per RBI PA Directions 2025, Section 5.4, KYC holds must be resolved within 7 business days of complete document submission. I submitted all documents on [date]. This constitutes a violation of RBI-mandated TAT. I request immediate release of Rs. [amount] or written justification citing the specific regulatory basis for continued hold."
+If a requested document is unavailable, ask whether another accepted document can satisfy the same check. Do not state that the provider is legally barred from requesting GST unless a qualified adviser has verified that conclusion for the specific facts and applicable law.
 
-For Missing Written Communication:
-"I have not received written communication explaining the reason for my account hold as required by RBI PA Directions 2025, Section 5.2. Failure to provide this within 24 hours of placing a hold constitutes a regulatory violation. I request immediate written communication or I will file a complaint with the RBI Integrated Ombudsman."
+STEP 5 - USE THE PUBLISHED ESCALATION MATRIX
 
-SECTION D: FINANCIAL IMPACT CALCULATION
+Paragraph 8 requires the payment aggregator to appoint an officer for merchant issues and publish an escalation matrix. Escalate with the original ticket, chronology, amount, requested outcome, and attachments. Use the provider's published timing rather than an invented universal deadline.
 
-How to Calculate Your Loss from a Settlement Hold:
-- Daily revenue = (Monthly transaction volume) / 30
-- Revenue blocked = Daily revenue x Number of days held
-- Opportunity cost = Lost sales due to customers getting payment errors
-- Example: Rs. 3 lakh/month volume = Rs. 10,000/day. A 15-day hold = Rs. 1.5 lakh blocked.
+STEP 6 - CHECK EXTERNAL REMEDIES
 
-In the RBI Ombudsman complaint, include this calculation. The Ombudsman can award:
-- Release of held funds
-- Interest on delayed settlements (at prevailing bank rate)
-- Compensation up to Rs. 20 lakh for mental agony and financial loss
+The Reserve Bank - Integrated Ombudsman Scheme, 2021 is a cost-free route for maintainable complaints against covered regulated entities. A complainant generally must first complain in writing to the regulated entity and may approach the Ombudsman after rejection or if no reply is received within one month. Coverage, exclusions, limitation periods, and complainant status must be checked for the specific case at https://cms.rbi.org.in.
 
-SECTION E: SPECIFIC SCENARIOS AND RESOLUTIONS
+Do not state that days elapsed from the underlying issue alone establish Ombudsman eligibility. Do not promise fund release, compensation, a penalty, or a decision deadline.
 
-SCENARIO: Razorpay demands GST from a freelancer earning below Rs. 20 lakh/year.
-RESOLUTION: GST registration is optional below this threshold. Cite Income Tax Act, GST Act threshold, AND RBI PA Directions 2025 Para 4.3(ii). Razorpay cannot mandate registration with a government body as a pre-condition for payment services.
+SAFE REQUEST LANGUAGE
 
-SCENARIO: Merchant's account is suspended without any email notification.
-RESOLUTION: This is a direct violation of RBI Section 5.2 (must notify within 24 hours). File an emergency complaint with both Razorpay Grievance Officer and RBI Ombudsman simultaneously. Request compensation for the notification violation.
+"Please provide the specific reason for the restriction, the remediation steps, the applicable merchant-policy or agreement clause, and the expected review or settlement date. Please also provide the merchant-grievance contact and escalation matrix referenced in paragraph 8 of RBI/DPSS/2025-26/141."
 
-SCENARIO: Chargeback ratio slightly above threshold due to a single fraudulent customer.
-RESOLUTION: Provide documentation showing the fraud was reported, customer communication logs, and police complaint if filed. Request Razorpay exclude the fraudulent transaction from ratio calculation. If refused, escalate citing that the ratio threshold exists to prevent systemic fraud, not penalize one-off victim merchants.
+FINANCIAL IMPACT
 
-SCENARIO: Transaction volume spike due to legitimate seasonal sale.
-RESOLUTION: Provide advance written notice of future sales events to Razorpay's risk team. For current holds, provide: marketing campaign proof, invoice samples, customer list, fulfillment records. A business event letter on company letterhead is sufficient evidence.
+Separate money actually outstanding from projected business loss. Reconcile gross amount, settlement amount, fees, tax, refunds, chargebacks, and adjustments. Label estimates clearly and retain the source data and calculation method.
 
-SECTION F: IMPORTANT CONTACT INFORMATION
+REVIEW BEFORE SENDING
 
-Razorpay Support: https://razorpay.com/support/
-Razorpay Grievance Officer: grievance.officer@razorpay.com
-Razorpay KYC Team: kyc@razorpay.com
-Razorpay Risk Team: risk@razorpay.com
-
-RBI Integrated Ombudsman: https://cms.rbi.org.in
-RBI DPSS (Payment Systems): https://www.rbi.org.in/Scripts/Bs_Dpss.aspx
-RBI Complaint Portal: https://sachet.rbi.org.in
-
-RBI PA Directions 2025 Reference: https://www.rbi.org.in/Scripts/BS_ViewMasDirections.aspx?id=12850
-Circular Number: RBI/DPSS/2025-26/141
-
+Generated correspondence is a draft. Replace placeholders, remove claims that are not supported by the merchant agreement or an authoritative source, minimise personal data, and obtain legal or accounting review where the stakes justify it.
