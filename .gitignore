@@ -11,3 +11,6 @@ venv/
 
 # Logs
 *.log
+
+# Local cross-service runtime state
+runtime/
