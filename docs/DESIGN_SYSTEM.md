@@ -1,100 +1,84 @@
-# MerchantOS — The Merchant's Desk
+# MerchantOS design system
 
-## Design direction
+## Direction
 
-A white financial workspace with the character of a carefully typeset account book. The composition is built around navigation, transaction records, and focused tasks.
-
-Reference research:
-- [Stripe Payments](https://stripe.com/payments): product examples alongside financial information.
-- [Stripe dashboard design](https://docs.stripe.com/stripe-apps/design): overview, list, and object-specific workflows.
-- [Razorpay Payment Gateway](https://razorpay.com/payment-gateway/): consolidated payment operations.
-- [Wise Business](https://wise.com/us/business/): plain-language amounts, fees, and actions.
-
-These are information-design references. MerchantOS has its own typography, palette, mark, and layout.
+MerchantOS uses an editorial financial command-desk aesthetic: a warm paper-like canvas, deep ink typography, a restrained evergreen signal color, and calm data surfaces. The workspace prioritizes evidence, money, and next actions over decorative effects.
 
 ## Typography
 
-**Primary: Instrument Sans**, 400–700. Controls, navigation, labels, tables, and financial figures. Tabular numerals for aligned amounts.
-
-**Secondary: Newsreader**, optical sizes 6–72, weights 400–500. Reserved for page titles, the main balance, and occasional supporting notes. Never used for dense tables.
-
-**Utility: IBM Plex Mono**, 400–500. Transaction references and step numbers.
-
-Fallbacks: Segoe UI for the primary face, Georgia for the secondary face, system monospace for identifiers. Web fonts are requested through Google Fonts; layouts must remain usable without them.
-
-Scale:
-- Page heading: 32–48 px, regular serif, compact leading.
-- Main balance: 43–66 px, regular serif.
-- Section heading: 18 px, semibold sans.
-- Financial summary: 23–34 px, medium sans.
-- Body and controls: 12–14 px.
-- Supplemental metadata: 10–11 px.
+- Editorial headings: Newsreader, weight 500, with Georgia as the local fallback.
+- Interface text and financial figures: DM Sans, with Segoe UI as the local fallback.
+- Page titles use sentence case, tight tracking, and compact line height.
+- Small operational labels use uppercase and wider tracking.
+- Financial values use tabular figures; transaction IDs use a monospace face.
 
 ## Palette
 
 | Role | Value |
 | --- | --- |
-| Canvas | #FFFFFF |
-| Navigation / supporting wash | #F6F8F5 |
-| Primary ink | #202D29 |
-| Muted text | #63706A |
-| Dividers | #E3E8E3 |
-| Primary action | #195846 |
-| Balance accent | #E6EE9F |
-| Settled status | #3D7841 on #EDF6ED |
-| Pending status | #97641B on #FCF5E6 |
-| Hold status | #AE5547 on #FCF0ED |
+| Canvas | `#F3F1EB` |
+| Light surface | `#FFFEFB` / `#F8F7F2` |
+| Navigation rail | `#15251F` |
+| Heading | `#17211D` |
+| Body | `#43504A` |
+| Accent | `#176B50` |
+| Accent hover | `#0D4E3A` |
+| Brand detail | `#F5C85C` |
+| Success | `#176B50` |
+| Warning | `#95610C` |
+| Danger | `#A53D34` |
 
-Citron is a supporting accent in the balance composition. Buttons retain one consistent green across all pages. Status colors always include a text label.
+Palette values are design tokens, not runtime merchant configuration.
 
 ## Composition
 
-- A 236 px desktop navigation rail, with a native collapsible sidebar on narrow screens.
-- White main canvas, thin dividers, generous section spacing.
-- Content width capped at 1440 px; desktop gutters 53 px, mobile gutters 18 px.
-- 5–9 px corner radius. No decorative shadows or gradients.
-- A small three-stroke brand mark repeats as the balance-panel motif.
-- Real Streamlit containers group widgets. Do not split HTML opening and closing tags around native widgets.
-- Financial tables use restrained headers, row rules, right-aligned amounts, and compact status markers.
+- The landing page contains exactly a hero and an about section.
+- Desktop navigation is horizontal; mobile navigation uses an accessible full-screen menu.
+- The Streamlit workspace uses one compact dark rail on every page. It expands on hover or keyboard focus and becomes a bottom navigation on small screens.
+- Main content is capped at 1380px and uses responsive `clamp()` spacing.
+- Panels and financial cards use warm flat surfaces, thin dividers, moderate radii, and restrained shadows.
+- Primary buttons use evergreen with clear, sentence-case labels.
+- Tables scroll horizontally on narrow screens.
 
-## Page templates
+## Page patterns
 
-### Overview
-Compact title → sample label and report action → main balance beside a complete amount breakdown → three financial figures → searchable settlement ledger beside recovery actions and payment-method volumes.
+### Landing
 
-All sample figures are calculated from the included CSV. The sample is explicitly labeled. The amount breakdown uses deductions on settled rows to avoid counting charges on unpaid rows twice.
+Video-led hero, six-line staircase heading, primary workspace action, followed by a concise two-column product explanation. Runtime configuration supplies video sources and application destinations.
 
-### KYC
-Compact title → three-stage progress → one question with native radio selection and navigation → contextual explanation beside the question.
+### Command center
 
-Results use action-plan, support-request, and evidence tabs.
+Zero-state recovery pulse, three workflow cards, latest real exception ledger, and local service status. Demonstration data remains isolated from command-center metrics.
+
+### KYC diagnosis
+
+Three-stage journey, one question at a time, contextual guidance, then action-plan, support-request, and evidence tabs.
 
 ### Reconciliation
-Three-stage progress → upload, manual, and sample modes in a bordered working area → explanatory rail.
 
-Results use financial figures and tabs for exceptions, the complete ledger, exports, and policy context.
+Upload/manual/sample entry modes, grouped exceptions, full ledger, balanced financial equation, editable recovery request, and CSV export.
 
 ### Escalation
-Case details, evidence, and correspondence occupy the main column. The narrower column shows elapsed days, the recommended contact, and the escalation sequence.
+
+Case details, evidence checklist, editable correspondence, filing guidance, and elapsed-time recommendation.
 
 ## Interaction and accessibility
 
-- Each stage has one primary action.
-- Native controls retain labels and keyboard operation.
-- Focus rings are visible.
-- Decorative SVGs are hidden from assistive technology.
-- Tables retain native heading and cell semantics.
-- Dynamic text inserted into HTML is escaped.
-- Search and filtering use native inputs.
-- Tables scroll horizontally on narrow displays; sidebar navigation collapses.
-- Reduced-motion settings are respected.
-- Check startup and result screens with Streamlit AppTest. Visual browser QA is a separate check and must not be claimed from HTTP responses or AppTest alone.
+- Keep one clear primary action per stage.
+- Preserve native form labels and keyboard behavior.
+- Provide visible focus rings.
+- Mark decorative video/SVG content as hidden from assistive technology.
+- Escape dynamic strings before inserting them into raw HTML.
+- Keep navigation destinations labelled with titles while the desktop rail is collapsed.
+- Respect reduced-motion settings.
+- Never make video playback a prerequisite for navigation or core workflow use.
 
-## Implementation
+## Implementation ownership
 
-- src/ui.py: navigation and component helpers.
-- src/styles.css: the complete visual system and responsive rules.
-- .streamlit/config.toml: native widget colors.
-- home.py and Agent1–3/app.py: page composition.
+- `landing.css`: public-site styling and responsive behavior.
+- `src/styles.css`: Streamlit workspace styling.
+- `src/ui.py`: shared workspace components.
+- `.streamlit/config.toml`: native widget theme.
+- `index.html`, `home.py`, and `Agent1`–`Agent3/app.py`: page composition.
 
-Business engines, provider integrations, and the vector database are outside the design layer.
+Functional/business rules belong in Python and shared configuration, not in the design layer.
