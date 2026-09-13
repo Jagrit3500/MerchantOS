@@ -4,7 +4,9 @@ SOURCES: Razorpay public documentation
 KYC URL: https://razorpay.com/docs/payments/business-types-kyc-documents/
 SETTLEMENT URL: https://razorpay.com/docs/payments/settlements/
 HOLD URL: https://razorpay.com/docs/payments/settlements/dashboard/
-LAST VERIFIED: 12 September 2026
+PRICING URL: https://razorpay.com/pricing/
+GRIEVANCE URL: https://razorpay.com/grievance-redressal/payments/
+LAST VERIFIED: 13 September 2026
 
 SOURCE BOUNDARY
 
@@ -20,9 +22,9 @@ If a requested document is unavailable, ask support which current policy, risk c
 
 SETTLEMENT SCHEDULE
 
-Razorpay's public settlement documentation describes T+2 working days as the standard domestic settlement cycle while noting that the schedule can vary based on business vertical, risk factors, bank approval, and the schedule shown in the dashboard. International settlement timing is shown in the dashboard and depends on applicable requirements.
+Razorpay's current public settlement documentation describes T+1 working day as the standard domestic settlement cycle while noting that the schedule can vary based on business vertical, risk factors, bank approval, and the schedule shown in the dashboard. International settlement timing is shown in the dashboard and depends on applicable requirements.
 
-MerchantOS therefore treats T+2 as a configurable provider expectation, not a universal statutory RBI deadline. Bank holidays are not automatically modelled by the local audit; verify exceptions against the dashboard timeline.
+MerchantOS therefore treats T+1 as a configurable provider expectation, not a universal statutory RBI deadline. Bank holidays are not automatically modelled by the local audit; verify exceptions against the dashboard timeline.
 
 SETTLEMENT HOLDS
 
@@ -32,6 +34,8 @@ RECONCILIATION
 
 Razorpay's settlement breakdown includes payment amount, adjustments, tax, fees, and settlement amount. Compare the exported report with the contracted pricing and dashboard schedule. MerchantOS fee rates are operator-configured estimates and must not be presented as the provider's binding price list.
 
+Razorpay's current public standard Payment Gateway price is a 2% platform fee plus GST across common payment modes, including standard UPI and netbanking. The UPI MDR may be zero while a separate platform or technology fee still applies. Custom or enterprise pricing can differ, so the merchant's dashboard and agreement remain authoritative.
+
 ESCALATION RECORD
 
-Start with the provider's current support and merchant-grievance channels. Retain ticket numbers, dates, responses, transaction IDs, bank statements, and the relevant dashboard timeline. Verify any Ombudsman or legal route separately before submitting a generated draft.
+Start with the provider's current support portal and published payment grievance escalation policy. The current terms list nodal-officer@razorpay.com; do not substitute an unverified grievance email. Retain ticket numbers, dates, responses, transaction IDs, bank statements, and the relevant dashboard timeline. Verify any Ombudsman or legal route separately before submitting a generated draft.

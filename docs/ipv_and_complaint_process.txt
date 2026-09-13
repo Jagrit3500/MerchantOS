@@ -1,9 +1,9 @@
 KYC VERIFICATION AND RBI COMPLAINT CHECKLIST
 
-SOURCES: RBI/DPSS/2025-26/141 and Reserve Bank - Integrated Ombudsman Scheme, 2021
+SOURCES: RBI/DPSS/2025-26/141 and the current Reserve Bank Integrated Ombudsman Scheme
 OFFICIAL PA URL: https://www.rbi.org.in/Scripts/BS_ViewMasDirections.aspx?id=12896
 OFFICIAL COMPLAINT PORTAL: https://cms.rbi.org.in
-LAST VERIFIED: 12 September 2026
+LAST VERIFIED: 13 September 2026
 
 CONTACT POINT VERIFICATION AND ASSISTED KYC
 
@@ -21,7 +21,7 @@ Before considering the RBI Ombudsman, make a clear written complaint to the enti
 
 OMBUDSMAN ELIGIBILITY CHECK
 
-The Reserve Bank - Integrated Ombudsman Scheme, 2021 applies to complaints about deficiency in service by covered regulated entities. The complainant generally must first complain in writing to the regulated entity. A complaint may be filed after an unsatisfactory rejection or when the entity has not replied within one month.
+The current Reserve Bank Integrated Ombudsman Scheme applies to maintainable complaints about deficiency in service by covered regulated entities. The complainant must first complain to the regulated entity and follow the current waiting-period requirements shown by RBI.
 
 Before filing, confirm that the entity is covered, the complainant qualifies as its customer for the relevant service, the complaint is not excluded or already pending in another forum, and the filing is within the Scheme's limitation period. Use the current portal prompts rather than assuming a particular category will appear.
 

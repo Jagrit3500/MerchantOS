@@ -1,7 +1,7 @@
 MERCHANT RECOVERY PLAYBOOK - EVIDENCE FIRST
 
 SOURCES: RBI/DPSS/2025-26/141, provider public documentation, merchant agreement, and case records
-LAST VERIFIED: 12 September 2026
+LAST VERIFIED: 13 September 2026
 
 STEP 1 - PRESERVE THE RECORD
 
@@ -31,7 +31,7 @@ Paragraph 8 requires the payment aggregator to appoint an officer for merchant i
 
 STEP 6 - CHECK EXTERNAL REMEDIES
 
-The Reserve Bank - Integrated Ombudsman Scheme, 2021 is a cost-free route for maintainable complaints against covered regulated entities. A complainant generally must first complain in writing to the regulated entity and may approach the Ombudsman after rejection or if no reply is received within one month. Coverage, exclusions, limitation periods, and complainant status must be checked for the specific case at https://cms.rbi.org.in.
+The current Reserve Bank Integrated Ombudsman Scheme is a cost-free route for maintainable complaints against covered regulated entities. A complainant must first complain to the regulated entity and follow the current waiting-period and maintainability requirements. Coverage, exclusions, limitation periods, and complainant status must be checked for the specific case at https://cms.rbi.org.in.
 
 Do not state that days elapsed from the underlying issue alone establish Ombudsman eligibility. Do not promise fund release, compensation, a penalty, or a decision deadline.
 
