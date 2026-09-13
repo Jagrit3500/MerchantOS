@@ -84,16 +84,30 @@ WORKSPACE_NAME = os.getenv("MERCHANT_WORKSPACE_NAME", "Merchant workspace")
 CURRENCY = os.getenv("MERCHANT_CURRENCY", "INR")
 CURRENCY_SYMBOL = os.getenv("MERCHANT_CURRENCY_SYMBOL", "₹")
 REGION = os.getenv("MERCHANT_REGION", "India")
-AGGREGATOR_NAME = os.getenv("PAYMENT_AGGREGATOR_NAME", "Razorpay Software Private Limited")
+AGGREGATOR_NAME = os.getenv("PAYMENT_AGGREGATOR_NAME", "Razorpay Payments Private Limited")
 AGGREGATOR_SHORT = os.getenv("PAYMENT_AGGREGATOR_SHORT", "Razorpay")
-AGGREGATOR_GRIEVANCE_EMAIL = os.getenv("PAYMENT_AGGREGATOR_GRIEVANCE_EMAIL", "grievance.officer@razorpay.com")
-AGGREGATOR_SUPPORT_URL = os.getenv("PAYMENT_AGGREGATOR_SUPPORT_URL", "razorpay.com/support")
+AGGREGATOR_GRIEVANCE_EMAIL = os.getenv("PAYMENT_AGGREGATOR_GRIEVANCE_EMAIL", "nodal-officer@razorpay.com")
+AGGREGATOR_SUPPORT_URL = os.getenv(
+    "PAYMENT_AGGREGATOR_SUPPORT_URL", "https://razorpay.com/support/#request"
+)
+AGGREGATOR_GRIEVANCE_URL = os.getenv(
+    "PAYMENT_AGGREGATOR_GRIEVANCE_URL", "https://razorpay.com/grievance-redressal/payments/"
+)
+AGGREGATOR_ASSISTANT_NODAL_URL = os.getenv(
+    "PAYMENT_AGGREGATOR_ASSISTANT_NODAL_URL", "https://razorpay.com/l2-grievance-escalation/"
+)
+AGGREGATOR_NODAL_URL = os.getenv(
+    "PAYMENT_AGGREGATOR_NODAL_URL", "https://razorpay.com/l3-nodal-escalation/"
+)
 AGGREGATOR_KYC_URL = os.getenv(
     "PAYMENT_AGGREGATOR_KYC_URL",
     "https://razorpay.com/docs/payments/business-types-kyc-documents/",
 )
-AGGREGATOR_ADDRESS = os.getenv("PAYMENT_AGGREGATOR_ADDRESS", "[PAYMENT AGGREGATOR REGISTERED ADDRESS]")
-AGGREGATOR_CIN = os.getenv("PAYMENT_AGGREGATOR_CIN", "[PAYMENT AGGREGATOR CIN]")
+AGGREGATOR_ADDRESS = os.getenv(
+    "PAYMENT_AGGREGATOR_ADDRESS",
+    "1st Floor, SJR Cyber, 22 Laskar Hosur Road, Adugodi, Bengaluru, Karnataka 560030",
+)
+AGGREGATOR_CIN = os.getenv("PAYMENT_AGGREGATOR_CIN", "U62099KA2024PTC188982")
 OMBUDSMAN_URL = os.getenv("OMBUDSMAN_URL", "https://cms.rbi.org.in")
 CONSUMER_HELP_URL = os.getenv("CONSUMER_HELP_URL", "consumerhelpline.gov.in")
 PA_DIRECTIONS_NAME = os.getenv(
@@ -113,19 +127,23 @@ PA_SETTLEMENT_REFERENCE = os.getenv(
 OMBUDSMAN_SCHEME_REFERENCE = os.getenv(
     "OMBUDSMAN_SCHEME_REFERENCE", "Reserve Bank - Integrated Ombudsman Scheme, 2021"
 )
-POLICY_LAST_VERIFIED_DATE = os.getenv("POLICY_LAST_VERIFIED_DATE", "2026-09-12")
+CONSUMER_LAW_REFERENCE = os.getenv("CONSUMER_LAW_REFERENCE", "Consumer Protection Act, 2019")
+POLICY_LAST_VERIFIED_DATE = os.getenv("POLICY_LAST_VERIFIED_DATE", "2026-09-13")
 
 # Dynamic Fee & Tax Settings
-MDR_RATE_UPI = float(os.getenv("MDR_RATE_UPI", "0.0"))
+# Razorpay's public standard Payment Gateway price is currently a 2% platform
+# fee across the common payment modes plus GST. Deployments with negotiated
+# pricing must override these environment variables with the merchant's terms.
+MDR_RATE_UPI = float(os.getenv("MDR_RATE_UPI", "2.0"))
 MDR_RATE_CARD = float(os.getenv("MDR_RATE_CARD", "2.0"))
-MDR_RATE_NETBANKING = float(os.getenv("MDR_RATE_NETBANKING", "1.5"))
-MDR_RATE_WALLET = float(os.getenv("MDR_RATE_WALLET", "1.5"))
-MDR_RATE_EMI = float(os.getenv("MDR_RATE_EMI", "2.5"))
+MDR_RATE_NETBANKING = float(os.getenv("MDR_RATE_NETBANKING", "2.0"))
+MDR_RATE_WALLET = float(os.getenv("MDR_RATE_WALLET", "2.0"))
+MDR_RATE_EMI = float(os.getenv("MDR_RATE_EMI", "2.0"))
 MDR_RATE_PAYLATER = float(os.getenv("MDR_RATE_PAYLATER", "2.0"))
 MDR_RATE_DEFAULT = float(os.getenv("MDR_RATE_DEFAULT", "2.0"))
 GST_RATE = float(os.getenv("GST_RATE", "18.0"))
 EXPECTED_SETTLEMENT_DAYS = int(
-    os.getenv("EXPECTED_SETTLEMENT_DAYS", os.getenv("TAT_CALENDAR_DAYS", "2"))
+    os.getenv("EXPECTED_SETTLEMENT_DAYS", os.getenv("TAT_CALENDAR_DAYS", "1"))
 )
 SETTLEMENT_DAY_MODE = os.getenv("SETTLEMENT_DAY_MODE", "business").strip().lower()
 # Backwards-compatible name retained for older imports and existing deployments.
@@ -228,8 +246,11 @@ SAMPLE_PREVIEW_ROWS = int(os.getenv("SAMPLE_PREVIEW_ROWS", "4"))
 MANUAL_AMOUNT_STEP = float(os.getenv("MANUAL_AMOUNT_STEP", "50"))
 
 # Recovery workflow timelines
-SUPPORT_DEADLINE_DAYS = int(os.getenv("SUPPORT_DEADLINE_DAYS", "5"))
-GRIEVANCE_TRIGGER_DAYS = int(os.getenv("GRIEVANCE_TRIGGER_DAYS", "5"))
+SUPPORT_DEADLINE_DAYS = int(os.getenv("SUPPORT_DEADLINE_DAYS", "10"))
+# Provider-published escalation windows: Level 2 after 10 business days,
+# Level 3 after 20 business days, and a final provider response by day 30.
+GRIEVANCE_TRIGGER_DAYS = int(os.getenv("GRIEVANCE_TRIGGER_DAYS", "10"))
+NODAL_TRIGGER_DAYS = int(os.getenv("NODAL_TRIGGER_DAYS", "20"))
 GRIEVANCE_DEADLINE_DAYS = int(os.getenv("GRIEVANCE_DEADLINE_DAYS", "30"))
 OMBUDSMAN_TRIGGER_DAYS = int(os.getenv("OMBUDSMAN_TRIGGER_DAYS", "30"))
 OMBUDSMAN_DEADLINE_DAYS = int(os.getenv("OMBUDSMAN_DEADLINE_DAYS", "365"))
@@ -354,10 +375,24 @@ def _validate_settings() -> None:
         "PA_DIRECTIONS_URL": PA_DIRECTIONS_URL,
         "OMBUDSMAN_URL": OMBUDSMAN_URL,
         "AGGREGATOR_KYC_URL": AGGREGATOR_KYC_URL,
+        "AGGREGATOR_SUPPORT_URL": AGGREGATOR_SUPPORT_URL,
+        "AGGREGATOR_GRIEVANCE_URL": AGGREGATOR_GRIEVANCE_URL,
+        "AGGREGATOR_ASSISTANT_NODAL_URL": AGGREGATOR_ASSISTANT_NODAL_URL,
+        "AGGREGATOR_NODAL_URL": AGGREGATOR_NODAL_URL,
     }.items():
         parsed = urlsplit(value)
         if parsed.scheme not in {"http", "https"} or not parsed.netloc:
             raise ValueError(f"{name} must be an absolute HTTP(S) URL")
+    escalation_days = (
+        GRIEVANCE_TRIGGER_DAYS,
+        NODAL_TRIGGER_DAYS,
+        OMBUDSMAN_TRIGGER_DAYS,
+        LEGAL_TRIGGER_DAYS,
+    )
+    if tuple(sorted(escalation_days)) != escalation_days or len(set(escalation_days)) != len(escalation_days):
+        raise ValueError("Escalation trigger days must be strictly increasing")
+    if SUPPORT_DEADLINE_DAYS > GRIEVANCE_TRIGGER_DAYS or GRIEVANCE_DEADLINE_DAYS < NODAL_TRIGGER_DAYS:
+        raise ValueError("Provider response deadlines must align with escalation trigger days")
 
 
 _validate_settings()
