@@ -39,8 +39,8 @@ def draft_ticket(diagnosis: dict, rag_answer: str = "") -> str:
     if f"> {config.OMBUDSMAN_TRIGGER_DAYS} days" in days_on_hold_answer or f"over {config.OMBUDSMAN_TRIGGER_DAYS}" in days_on_hold_answer.lower():
         duration_clause = (
             f"FORMAL ESCALATION REVIEW: This issue has now remained unresolved for {days_on_hold}. "
-            "Elapsed time from the restriction alone does not establish Ombudsman eligibility. If a prior written complaint to a covered regulated entity was rejected or remained unanswered for one month, "
-            "check the eligibility and exclusions in the Reserve Bank - Integrated Ombudsman Scheme, 2021 before filing."
+            f"Elapsed time from the restriction alone does not establish Ombudsman eligibility. If a prior written complaint to a covered regulated entity was rejected or remained unanswered for {config.OMBUDSMAN_TRIGGER_DAYS} days, "
+            f"check the eligibility and exclusions in the {config.OMBUDSMAN_SCHEME_REFERENCE} before filing."
         )
         sla_timeline = f"Please acknowledge within {config.FOLLOWUP_ACK_HOURS} hours and provide a final response or a dated resolution plan."
     elif f"{config.HOLD_URGENT_TRIGGER_DAYS} to {config.OMBUDSMAN_TRIGGER_DAYS} days" in days_on_hold_answer:
@@ -273,6 +273,7 @@ Regards,
 def get_escalation_path() -> list[dict]:
     return [
         {"tier": 1, "action": f"Submit {config.AGGREGATOR_SHORT} support ticket", "timeline": f"Wait {config.INITIAL_ACK_HOURS}-{config.FOLLOWUP_ACK_HOURS} hours for response"},
-        {"tier": 2, "action": f"Escalate to {config.AGGREGATOR_SHORT} Grievance Officer", "timeline": f"If no resolution after {config.GRIEVANCE_TRIGGER_DAYS} business days"},
-        {"tier": 3, "action": "Check RBI Ombudsman eligibility before filing", "timeline": "After a covered entity rejects the prior complaint or does not reply within one month", "url": config.OMBUDSMAN_URL},
+        {"tier": 2, "action": f"Use {config.AGGREGATOR_SHORT} Level 2 escalation", "timeline": f"If no resolution after {config.GRIEVANCE_TRIGGER_DAYS} business days", "url": config.AGGREGATOR_ASSISTANT_NODAL_URL},
+        {"tier": 3, "action": f"Use {config.AGGREGATOR_SHORT} Level 3 Nodal escalation", "timeline": f"If no final response after {config.NODAL_TRIGGER_DAYS} business days", "url": config.AGGREGATOR_NODAL_URL},
+        {"tier": 4, "action": "Check RBI Ombudsman eligibility before filing", "timeline": f"After a covered entity rejects the prior complaint or does not reply within {config.OMBUDSMAN_TRIGGER_DAYS} days", "url": config.OMBUDSMAN_URL},
     ]
