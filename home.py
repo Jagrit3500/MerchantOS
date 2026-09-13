@@ -81,8 +81,12 @@ def live_workspace() -> None:
     state = read_reconciliation_state()
     summary = state.get("summary", {}) if state else {}
     recovery = float(summary.get("recovery_amount") or 0)
+    amount_to_review = float(summary.get("amount_to_review") or recovery)
     fee_difference = float(summary.get("total_overcharge") or 0)
-    exception_count = int(summary.get("held_count") or 0) + int(summary.get("pending_count") or 0)
+    exception_count = int(
+        summary.get("exception_transaction_count")
+        or (int(summary.get("held_count") or 0) + int(summary.get("pending_count") or 0))
+    )
     service_states = {
         "agent1": is_port_active(config.PORT_AGENT1),
         "agent2": is_port_active(config.PORT_AGENT2),
@@ -93,7 +97,7 @@ def live_workspace() -> None:
     with st.container(key="home_metrics"):
         metric_cols = st.columns(4)
         metric_data = [
-            ("Capital to review", f"{config.CURRENCY_SYMBOL}{recovery:,.2f}", f"{exception_count} held or pending transactions"),
+            ("Capital to review", f"{config.CURRENCY_SYMBOL}{amount_to_review:,.2f}", f"{exception_count} transactions requiring review"),
             ("Gross processed", f"{config.CURRENCY_SYMBOL}{float(summary.get('total_gross') or 0):,.2f}", f"{int(summary.get('total_transactions') or 0)} transactions"),
             ("Settled to bank", f"{config.CURRENCY_SYMBOL}{float(summary.get('total_settled') or 0):,.2f}", f"{int(summary.get('settled_count') or 0)} completed"),
             ("Fee difference", f"{config.CURRENCY_SYMBOL}{fee_difference:,.2f}", "Charged above configured expectation"),

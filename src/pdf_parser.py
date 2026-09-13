@@ -15,30 +15,28 @@ def parse_pdf(pdf_path: str) -> list[dict]:
     if not os.path.exists(pdf_path):
         raise FileNotFoundError(f"PDF not found: {pdf_path}")
 
-    doc = pymupdf.open(pdf_path)
     chunks = []
     chunk_id = 0
+    with pymupdf.open(pdf_path) as doc:
+        for page_num in range(len(doc)):
+            page = doc[page_num]
 
-    for page_num in range(len(doc)):
-        page = doc[page_num]
+            # Better text cleaning — removes extra whitespace
+            text = " ".join(page.get_text().split())
 
-        # Better text cleaning — removes extra whitespace
-        text = " ".join(page.get_text().split())
+            if not text:
+                continue
 
-        if not text:
-            continue
+            page_chunks = create_chunks(
+                text=text,
+                page_num=page_num + 1,  # 1-indexed
+                source=Path(pdf_path).name,
+                chunk_id_start=chunk_id
+            )
 
-        page_chunks = create_chunks(
-            text=text,
-            page_num=page_num + 1,  # 1-indexed
-            source=Path(pdf_path).name,
-            chunk_id_start=chunk_id
-        )
+            chunks.extend(page_chunks)
+            chunk_id += len(page_chunks)
 
-        chunks.extend(page_chunks)
-        chunk_id += len(page_chunks)
-
-    doc.close()
     return chunks
 
 
@@ -110,9 +108,9 @@ if __name__ == "__main__":
         pdf_path = sys.argv[1]
         chunks = parse_pdf(pdf_path)
         print(f"Total chunks: {len(chunks)}")
-        print(f"\nFirst chunk preview:")
+        print("\nFirst chunk preview:")
         print(chunks[0])
-        print(f"\nLast chunk preview:")
+        print("\nLast chunk preview:")
         print(chunks[-1])
     else:
         print("Usage: python src/pdf_parser.py <path_to_pdf>")

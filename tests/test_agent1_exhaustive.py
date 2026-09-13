@@ -9,14 +9,15 @@ from unittest.mock import patch
 from Agent1.kyc_agent import (
     CUSTOM_ISSUE_MAX_LENGTH,
     HOLD_REASONS,
-    MERCHANT_TYPES,
     QUESTIONS,
     RAG_QUERIES,
     KYCDiagnosisAgent,
 )
 from Agent1.ticket_drafter import draft_ticket
 from src import config
+from src.citation_validator import get_confidence_label
 from src.policy_evidence import get_policy_evidence, search_local_policy
+from src.retriever import filter_by_threshold, retrieve_chunks
 
 
 SPECIAL_GST_MERCHANTS = {
@@ -174,6 +175,26 @@ class Agent1EvidenceTests(unittest.TestCase):
                 self.assertEqual(result["retrieval"], "Semantic source recheck")
                 self.assertEqual(result["confidence_method"], "Top cosine similarity")
                 self.assertFalse(result["llm_used"])
+
+    def test_retrieval_thresholds_are_dynamic_and_validated(self) -> None:
+        chunks = [{"similarity": 0.6}]
+        with patch.object(config, "SIMILARITY_THRESHOLD", 0.7):
+            self.assertEqual(filter_by_threshold(chunks), [])
+            self.assertEqual(get_confidence_label(chunks)["label"], "low")
+        with patch.object(config, "SIMILARITY_THRESHOLD", 0.5):
+            self.assertEqual(filter_by_threshold(chunks), chunks)
+            self.assertEqual(get_confidence_label(chunks)["label"], "medium")
+
+        for invalid_threshold in (-0.01, 1.01):
+            with self.assertRaises(ValueError):
+                filter_by_threshold(chunks, invalid_threshold)
+            with self.assertRaises(ValueError):
+                get_confidence_label(chunks, invalid_threshold)
+
+    def test_retrieval_rejects_nonpositive_result_counts_before_io(self) -> None:
+        for invalid_k in (0, -1):
+            with self.assertRaises(ValueError):
+                retrieve_chunks("query", k=invalid_k)
 
 
 if __name__ == "__main__":

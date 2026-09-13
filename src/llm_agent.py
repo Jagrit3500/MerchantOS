@@ -4,6 +4,7 @@ Tries Groq LLM first. If unavailable (network issue, API error),
 falls back to directly presenting the top retrieved chunks as structured evidence.
 This ensures the app is ALWAYS useful regardless of LLM availability.
 """
+import logging
 import sys, os, re
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -14,6 +15,7 @@ from src.citation_validator import get_confidence_label, validate_citations
 
 _groq_client = None
 _groq_available = False
+LOGGER = logging.getLogger(__name__)
 
 def _init_groq():
     global _groq_client, _groq_available
@@ -28,6 +30,7 @@ def _init_groq():
     except Exception:
         _groq_client = None
         _groq_available = False
+        LOGGER.debug("Groq client initialization failed; extractive fallback remains available", exc_info=True)
         return False
 
 _init_groq()
@@ -148,9 +151,9 @@ def get_answer(
                 "actual_k": actual_k,
                 "llm_used": True,
             }
-        except Exception as e:
+        except Exception:
             # Groq failed — fall through to raw retrieval display
-            pass
+            LOGGER.debug("Groq response failed validation; using extractive fallback", exc_info=True)
 
     # Step 3: Fallback — format raw chunks as structured evidence
     answer = _format_fallback_answer(chunks, query)

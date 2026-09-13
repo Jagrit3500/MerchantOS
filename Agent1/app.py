@@ -1,4 +1,3 @@
-import html
 import importlib
 import os
 import sys
@@ -34,7 +33,7 @@ importlib.reload(_ui)
 from kyc_agent import KYCDiagnosisAgent, QUESTIONS
 from ticket_drafter import draft_ticket, get_escalation_path
 get_policy_evidence = _policy_evidence.get_policy_evidence
-from src.ui import activity_history, app_urls, badge, esc, footer, inject_theme, nav, note, panel, require_auth, same_tab_link, section_title, steps
+from src.ui import activity_history, app_urls, esc, footer, inject_theme, nav, note, panel, require_auth, same_tab_link, steps
 
 
 st.set_page_config(page_title="MerchantOS · KYC & Hold Diagnosis", page_icon="M", layout="wide", initial_sidebar_state="expanded")

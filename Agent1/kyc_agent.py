@@ -216,7 +216,7 @@ RAG_QUERIES = {
     "KYC_ACTION_REQUIRED": f"What does {config.PA_DIRECTIONS_REFERENCE} {config.PA_DUE_DILIGENCE_REFERENCE} require for merchant due diligence and CKYCR checks?",
     "RISK_TXN_SPIKE":   "What records should a merchant preserve when an account restriction coincides with unusual transaction volume, and how should the merchant ask the provider to confirm the reason and remediation criteria?",
     "RISK_CHARGEBACK":  "What records should a merchant preserve when chargebacks or disputes coincide with an account restriction, and what do the current sources say about fixed card-network thresholds and settlement timing?",
-    "REGULATORY_LEA": f"What does {config.PA_DIRECTIONS_REFERENCE} paragraph 8 require about merchant policies, the officer for merchant issues, and the grievance escalation matrix?",
+    "REGULATORY_LEA": f"What does {config.PA_DIRECTIONS_REFERENCE} {config.PA_DISPUTE_REFERENCE} require about merchant policies, the officer for merchant issues, and the grievance escalation matrix?",
     "SETTLEMENT_DELAY": f"What settlement schedule, merchant agreement timeline, dashboard status, bank statement, fees, tax, refunds, chargebacks, and adjustments should a {config.AGGREGATOR_SHORT} merchant verify?",
     "RESTRICTION_UNCONFIRMED": "What dashboard status, transaction and settlement IDs, dates, screenshots, emails, support responses, bank statement, reason, remediation items, policy clause, and expected review date should a merchant preserve or request?",
 }
@@ -339,7 +339,7 @@ class KYCDiagnosisAgent:
 
         return {
             "hold_reason": hold_reason,
-            "hold_info": HOLD_REASONS[hold_reason],
+            "hold_info": dict(HOLD_REASONS[hold_reason]),
             "merchant_type": merchant_label,
             "merchant_type_key": merchant_key,
             "required_docs": required_docs,

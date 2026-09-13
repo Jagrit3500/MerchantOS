@@ -5,6 +5,7 @@ the current policy files without waiting for an embedding model or external LLM.
 """
 from __future__ import annotations
 
+import logging
 import math
 import re
 from collections import Counter
@@ -14,6 +15,7 @@ from pathlib import Path
 from src import config
 
 
+LOGGER = logging.getLogger(__name__)
 _TOKEN_RE = re.compile(r"[a-z0-9]+")
 _HEADING_MAX_CHARS = getattr(
     config,
@@ -185,6 +187,7 @@ def get_policy_evidence(
             reconnect=reconnect_index,
         )
     except Exception:
+        LOGGER.debug("Semantic policy search failed; using local evidence", exc_info=True)
         local["status"] = "Semantic search was unavailable; current local policy matches are shown."
         return local
 

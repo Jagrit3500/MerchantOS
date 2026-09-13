@@ -10,7 +10,7 @@ from Agent1.kyc_agent import KYCDiagnosisAgent, QUESTIONS
 from Agent1.ticket_drafter import draft_ticket
 from Agent2.reconciliation_agent import ReconciliationAgent
 from Agent3.escalation_agent import ESCALATION_TIERS, EscalationAgent
-from src import activity_history, auth, config
+from src import activity_history, auth, config, shared_state
 from src.citation_validator import validate_citations
 from src.policy_evidence import get_policy_evidence, search_local_policy
 
@@ -81,6 +81,37 @@ class ActivityHistoryTests(unittest.TestCase):
     def test_history_rejects_unknown_sections(self) -> None:
         with self.assertRaises(ValueError):
             activity_history.record_activity(1, "unknown", "completed", "Invalid")
+
+    def test_reconciliation_state_preserves_all_dashboard_review_totals(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            state_path = str(Path(temporary_directory) / "latest.json")
+            summary = {
+                "total_transactions": 3,
+                "settled_count": 2,
+                "held_count": 1,
+                "pending_count": 0,
+                "tat_count": 1,
+                "settlement_difference_count": 1,
+                "exception_transaction_count": 2,
+                "total_gross": 3000,
+                "total_settled": 1876.4,
+                "total_overcharge": 1.01,
+                "total_settlement_shortfall": 76.4,
+                "total_settlement_excess": 0,
+                "amount_to_review": 1077.41,
+                "net_recovery_requested": 1053.81,
+                "recovery_amount": 1000,
+                "held_funds": [],
+                "pending_funds": [],
+            }
+            with patch.object(config, "SHARED_STATE_PATH", state_path):
+                shared_state.write_reconciliation_state(summary, "audit.csv")
+                restored = shared_state.read_reconciliation_state()
+            self.assertIsNotNone(restored)
+            self.assertEqual(restored["source"], "audit.csv")
+            self.assertEqual(restored["summary"]["amount_to_review"], 1077.41)
+            self.assertEqual(restored["summary"]["exception_transaction_count"], 2)
+            self.assertEqual(restored["summary"]["net_recovery_requested"], 1053.81)
 
 
 class WorkflowTests(unittest.TestCase):
@@ -213,6 +244,23 @@ netbanking_standard,1000,20,3.6,976.4,settled,netbanking,2026-09-01,2026-09-02
         self.assertEqual(summary["timing_assessment_status"], "complete")
         self.assertEqual(summary["health_score"]["score"], 100)
 
+    def test_detected_fee_difference_is_in_amount_and_recovery_request(self) -> None:
+        agent = ReconciliationAgent()
+        content = """transaction_id,amount,fee,tax,settlement_amount,status,payment_method,transaction_date,settlement_date
+pay_small_overcharge,1000,21.01,3.6,975.39,settled,card,2026-09-01,2026-09-02
+"""
+        self.assertEqual(agent.parse_csv(content)["parsed"], 1)
+        summary = agent.analyze()
+        self.assertEqual(summary["total_overcharge"], 1.01)
+        self.assertEqual(summary["amount_to_review"], 1.01)
+        self.assertEqual(summary["net_recovery_requested"], 1.01)
+
+        request = agent.draft_recovery_ticket()
+        self.assertIn("Subject: Settlement Reconciliation Review - Exceptions Identified", request)
+        self.assertIn("FEE / TAX DIFFERENCE: ₹1.01", request)
+        self.assertIn("A detailed fee and tax breakdown", request)
+        self.assertNotIn("The audit found no hold", request)
+
     def test_missing_dates_are_reported_as_unassessed(self) -> None:
         agent = ReconciliationAgent()
         content = """transaction_id,amount,fee,tax,settlement_amount,status,payment_method
@@ -240,6 +288,24 @@ bad,100,2,0.36,0,unknown,card,2026-09-04,2026-09-08
         summary = agent.analyze()
         self.assertEqual(summary["recovery_amount"], 600)
         self.assertEqual(summary["recovery_amount_net"], 576.4)
+        self.assertEqual(summary["held_funds"][0]["outstanding_amount"], 600)
+        request = agent.draft_recovery_ticket()
+        self.assertIn("with ₹600.00 outstanding (₹1,000.00 gross transaction value)", request)
+        self.assertIn("Outstanding Held / Pending: ₹600.00", request)
+
+    def test_pending_status_with_full_gross_settlement_reports_zero_outstanding(self) -> None:
+        agent = ReconciliationAgent()
+        content = """transaction_id,amount,fee,tax,settlement_amount,status,payment_method,transaction_date,settlement_date
+pay_pending_paid,1000,20,3.6,1000,pending,upi,2026-09-01,
+"""
+        self.assertEqual(agent.parse_csv(content)["parsed"], 1)
+        summary = agent.analyze()
+        self.assertEqual(summary["pending_funds"][0]["outstanding_amount"], 0)
+        self.assertEqual(summary["recovery_amount"], 0)
+        self.assertIn(
+            "marked pending with ₹0.00 outstanding (₹1,000.00 gross transaction value)",
+            agent.draft_recovery_ticket(),
+        )
 
     def test_reconciliation_accepts_common_headers_currency_statuses_and_iso_dates(self) -> None:
         agent = ReconciliationAgent()
@@ -253,6 +319,21 @@ pay_alias,"₹1,000.00",20,3.60,976.40,Successful,Credit-Card,2026-09-01T09:30:0
         self.assertEqual(agent.transactions[0]["payment_method"], "credit_card")
         self.assertEqual(summary["health_score"]["label"], "Healthy")
         self.assertEqual(summary["residual_variance"], 0)
+
+    def test_reconciliation_accepts_common_two_digit_year_date_formats(self) -> None:
+        agent = ReconciliationAgent()
+        content = """transaction_id,amount,fee,tax,settlement_amount,status,payment_method,transaction_date,settlement_date
+short_month_dash,1000,20,3.6,976.4,settled,card,07-Sep-26,08-Sep-26
+short_month_space,1000,20,3.6,976.4,settled,card,07 Sep 26,08 Sep 26
+numeric_dash,1000,20,3.6,976.4,settled,card,07-09-26,08-09-26
+numeric_slash,1000,20,3.6,976.4,settled,card,07/09/26,08/09/26
+"""
+        parsed = agent.parse_csv(content)
+        self.assertEqual(parsed["parsed"], 4)
+        self.assertFalse(parsed["warnings"])
+        summary = agent.analyze()
+        self.assertEqual(summary["timing_evaluable_count"], 4)
+        self.assertEqual(summary["tat_count"], 0)
 
     def test_settled_shortfall_is_an_exception_in_summary_letter_and_export(self) -> None:
         agent = ReconciliationAgent()
@@ -333,6 +414,21 @@ two,200,4,0.72,195.28,settled,card
         agent.analyze()
         self.assertIn("I have reconciled the transactions below", agent.draft_recovery_ticket())
 
+    def test_single_transaction_letter_uses_singular_timing_language(self) -> None:
+        agent = ReconciliationAgent()
+        content = """transaction_id,amount,fee,tax,settlement_amount,status,payment_method,transaction_date,settlement_date
+one,100,2,0.36,97.64,settled,card,2026-09-07,2026-09-08
+"""
+        self.assertEqual(agent.parse_csv(content)["parsed"], 1)
+        agent.analyze()
+        request = agent.draft_recovery_ticket()
+        self.assertIn(
+            "Timing Assessment:         Assessed for the transaction; "
+            "0 timing exceptions were identified.",
+            request,
+        )
+        self.assertNotIn("1 transactions", request)
+
     def test_business_day_elapsed(self) -> None:
         with patch.object(config, "SETTLEMENT_DAY_MODE", "business"):
             self.assertEqual(
@@ -344,6 +440,22 @@ two,200,4,0.72,195.28,settled,card
                 ReconciliationAgent._settlement_elapsed_days(date(2026, 9, 4), date(2026, 9, 7)),
                 3,
             )
+
+    def test_timing_exception_letter_lists_affected_transactions_and_dates(self) -> None:
+        agent = ReconciliationAgent()
+        content = """transaction_id,amount,fee,tax,settlement_amount,status,payment_method,transaction_date,settlement_date
+pay_delayed,1000,20,3.6,976.4,settled,card,2026-09-07,2026-09-09
+"""
+        self.assertEqual(agent.parse_csv(content)["parsed"], 1)
+        summary = agent.analyze()
+        self.assertEqual(summary["tat_count"], 1)
+        request = agent.draft_recovery_ticket()
+        self.assertIn("Affected transactions:", request)
+        self.assertIn(
+            "pay_delayed: 2026-09-07 to 2026-09-09 "
+            "(2 business days; 1 business day beyond the configured window)",
+            request,
+        )
 
     def test_negative_escalation_days_choose_first_tier(self) -> None:
         self.assertEqual(EscalationAgent().recommend_tier(-5)["tier"], 1)

@@ -53,6 +53,19 @@ def clear_analysis() -> None:
             del st.session_state[key]
 
 
+def outstanding_status_detail(transaction: dict, status_label: str) -> str:
+    outstanding = transaction.get(
+        "outstanding_amount",
+        max(transaction["amount"] - transaction["settlement_amount"], 0),
+    )
+    detail = f'{config.CURRENCY_SYMBOL}{outstanding:,.2f} outstanding'
+    if transaction["settlement_amount"] > 0:
+        detail += f' after {config.CURRENCY_SYMBOL}{transaction["settlement_amount"]:,.2f} recorded settlement'
+    if outstanding == 0:
+        detail += f'; status remains {status_label.lower()}'
+    return detail
+
+
 def render_reconciliation_header() -> None:
     """Render the dedicated intake/completion identity for Agent 2."""
     completed = bool(st.session_state.get("a2_done"))
@@ -477,7 +490,7 @@ else:
         for column, label, value, sub in [
             (columns[0], "Gross processed", f'{config.CURRENCY_SYMBOL}{summary["total_gross"]:,.2f}', f'{summary["total_transactions"]} {transaction_label}'),
             (columns[1], "Settled to bank", f'{config.CURRENCY_SYMBOL}{summary["total_settled"]:,.2f}', f'{summary["settled_count"]} settled'),
-            (columns[2], "Held & pending", f'{config.CURRENCY_SYMBOL}{summary["recovery_amount"]:,.2f}', f'{summary["held_count"] + summary["pending_count"]} to follow up'),
+            (columns[2], "Outstanding held & pending", f'{config.CURRENCY_SYMBOL}{summary["recovery_amount"]:,.2f}', f'{summary["held_count"] + summary["pending_count"]} to follow up'),
             (columns[3], "Fee difference", f'{config.CURRENCY_SYMBOL}{summary["total_overcharge"]:,.2f}', "Charged minus configured benchmark"),
         ]:
             with column:
@@ -485,8 +498,8 @@ else:
 
     issues = {}
     for transactions, label, detail in [
-        (summary["held_funds"], "On hold", lambda t: f'{config.CURRENCY_SYMBOL}{t["amount"]:,.2f} withheld'),
-        (summary["pending_funds"], "Pending", lambda t: f'{config.CURRENCY_SYMBOL}{t["amount"]:,.2f} pending'),
+        (summary["held_funds"], "On hold", lambda t: outstanding_status_detail(t, "On hold")),
+        (summary["pending_funds"], "Pending", lambda t: outstanding_status_detail(t, "Pending")),
         (summary["tat_violations"], "Delay", lambda t: f'{t["days_delayed"]} {config.SETTLEMENT_DAY_MODE} days to settlement'),
         (
             summary.get("settlement_differences", []),

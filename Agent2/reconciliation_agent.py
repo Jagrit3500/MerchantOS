@@ -38,9 +38,7 @@ FEE_RATES: dict[str, tuple[float, float]] = {
 FEE_DEFAULT = (_mdr_default, _gst)
 
 # Merchant/provider agreements define settlement timing under the 2025 PA Directions.
-# MerchantOS compares reports with this operator-configured expectation.
-TAT_CALENDAR_DAYS = int(config.TAT_CALENDAR_DAYS)
-BALANCE_TOLERANCE = 0.01
+# MerchantOS compares reports with operator-configured expectations and tolerances.
 
 STATUS_ALIASES = {
     "settled": "settled",
@@ -205,7 +203,7 @@ class ReconciliationAgent:
             raise ValueError("amount must be greater than zero")
         if fee < 0 or tax < 0 or settle < 0:
             raise ValueError("amount, fee, tax, and settlement amount must not be negative")
-        if fee + tax > amount + BALANCE_TOLERANCE:
+        if fee + tax > amount + config.RECONCILIATION_BALANCE_TOLERANCE:
             raise ValueError("fee and tax exceed the gross amount")
         method_raw = self._get(row, "payment_method")
         method = self._normalize_method(method_raw)
@@ -254,7 +252,22 @@ class ReconciliationAgent:
             return datetime.fromisoformat(value.replace("Z", "+00:00")).date()
         except ValueError:
             pass
-        for fmt in ("%Y-%m-%d", "%d-%m-%Y", "%d/%m/%Y", "%Y/%m/%d", "%d %b %Y", "%d %B %Y"):
+        for fmt in (
+            "%Y-%m-%d",
+            "%d-%m-%Y",
+            "%d/%m/%Y",
+            "%Y/%m/%d",
+            "%d %b %Y",
+            "%d %B %Y",
+            "%d-%b-%Y",
+            "%d-%B-%Y",
+            "%d-%m-%y",
+            "%d/%m/%y",
+            "%d %b %y",
+            "%d %B %y",
+            "%d-%b-%y",
+            "%d-%B-%y",
+        ):
             try:
                 return datetime.strptime(value, fmt).date()
             except ValueError:
@@ -336,8 +349,9 @@ class ReconciliationAgent:
 
             expected_net = round(amt - fee - tax, 2)
             settlement_delta = round(expected_net - txn["settlement_amount"], 2)
-            should_check_balance = status == "settled" or settlement_delta < -BALANCE_TOLERANCE
-            if should_check_balance and abs(settlement_delta) > BALANCE_TOLERANCE:
+            balance_tolerance = config.RECONCILIATION_BALANCE_TOLERANCE
+            should_check_balance = status == "settled" or settlement_delta < -balance_tolerance
+            if should_check_balance and abs(settlement_delta) > balance_tolerance:
                 difference_type = "shortfall" if settlement_delta > 0 else "excess"
                 shortfall = max(settlement_delta, 0.0)
                 excess = max(-settlement_delta, 0.0)
@@ -358,25 +372,27 @@ class ReconciliationAgent:
             if td and sd:
                 timing_evaluable_count += 1
                 days_diff = self._settlement_elapsed_days(td, sd)
-                if days_diff > TAT_CALENDAR_DAYS:
+                if days_diff > config.EXPECTED_SETTLEMENT_DAYS:
                     tat_count += 1
                     tat_violations.append({
                         **txn,
                         "days_delayed": days_diff,
-                        "days_over_window": days_diff - TAT_CALENDAR_DAYS,
+                        "days_over_window": days_diff - config.EXPECTED_SETTLEMENT_DAYS,
                     })
 
             # Status
+            outstanding_amount = round(max(amt - txn["settlement_amount"], 0), 2)
+            status_txn = {**txn, "outstanding_amount": outstanding_amount}
             if status == "settled":
                 settled_count += 1
             elif status == "on_hold":
                 held_count += 1
-                held.append(txn)
-                missing.append({**txn, "issue": "on_hold"})
+                held.append(status_txn)
+                missing.append({**status_txn, "issue": "on_hold"})
             elif status == "pending":
                 pending_count += 1
-                pending.append(txn)
-                missing.append({**txn, "issue": "pending"})
+                pending.append(status_txn)
+                missing.append({**status_txn, "issue": "pending"})
 
             # Method breakdown
             mk = method.strip().lower() if method else "unknown"
@@ -401,7 +417,7 @@ class ReconciliationAgent:
             sum(max(t["amount"] - t["fee"] - t["tax"] - t["settlement_amount"], 0) for t in held + pending), 2
         )
         residual_variance = round(total_gross - total_settled - recovery_amount_net - total_fee - total_tax, 2)
-        if abs(residual_variance) < 0.005:
+        if abs(residual_variance) < config.RECONCILIATION_ZERO_TOLERANCE:
             residual_variance = 0.0
         issue_ids = {
             txn["transaction_id"]
@@ -416,7 +432,13 @@ class ReconciliationAgent:
             if timing_evaluable_count == 0
             else "partial"
         )
-        amount_to_review = round(recovery_amount + total_settlement_shortfall + total_settlement_excess, 2)
+        amount_to_review = round(
+            recovery_amount
+            + total_settlement_shortfall
+            + total_settlement_excess
+            + total_overcharge,
+            2,
+        )
         net_recovery_requested = round(
             recovery_amount_net + total_settlement_shortfall + total_overcharge,
             2,
@@ -485,23 +507,34 @@ class ReconciliationAgent:
         has_held = s.get("held_count", 0) > 0
         has_pending = s.get("pending_count", 0) > 0
         has_timing = s.get("tat_count", 0) > 0
-        has_fee_difference = s.get("total_overcharge", 0) > config.FEE_DISPUTE_MIN_AMOUNT
+        has_fee_difference = bool(s.get("overcharged_fees"))
         has_settlement_difference = s.get("settlement_difference_count", 0) > 0
         has_exceptions = has_held or has_pending or has_timing or has_fee_difference or has_settlement_difference
         transaction_word = lambda count: "transaction" if count == 1 else "transactions"
+        timing_exception_phrase = lambda count: (
+            f"{count} timing exception was identified"
+            if count == 1
+            else f"{count} timing exceptions were identified"
+        )
         timing_status = s.get("timing_assessment_status", "complete")
         timing_evaluable = s.get("timing_evaluable_count", s.get("total_transactions", 0))
+        timing_exceptions = timing_exception_phrase(s["tat_count"])
         if timing_status == "unavailable":
             timing_summary = "Not assessed - transaction and settlement dates were not supplied."
         elif timing_status == "partial":
             timing_summary = (
-                f"Partially assessed - {timing_evaluable} of {s['total_transactions']} transactions "
-                f"had both required dates; {s['tat_count']} exceptions were identified in those rows."
+                f"Partially assessed - {timing_evaluable} of {s['total_transactions']} "
+                f"{transaction_word(s['total_transactions'])} had both required dates; "
+                f"{timing_exceptions} in those rows."
             )
         else:
+            timing_scope = (
+                "Assessed for the transaction"
+                if s["total_transactions"] == 1
+                else f"Assessed for all {s['total_transactions']} transactions"
+            )
             timing_summary = (
-                f"Assessed for all {s['total_transactions']} transactions; "
-                f"{s['tat_count']} timing exceptions were identified."
+                f"{timing_scope}; {timing_exceptions}."
             )
         if has_held or has_pending:
             subject = "Settlement Reconciliation Request - Held or Pending Funds"
@@ -529,8 +562,13 @@ class ReconciliationAgent:
         n = 1
         if has_held:
             total_held = sum(t["amount"] for t in s["held_funds"])
+            held_outstanding = sum(t["outstanding_amount"] for t in s["held_funds"])
             lines += [
-                f"{n}. FUNDS ON HOLD: {s['held_count']} {transaction_word(s['held_count'])} totalling {INR}{total_held:,.2f}",
+                (
+                    f"{n}. FUNDS ON HOLD: {s['held_count']} {transaction_word(s['held_count'])} "
+                    f"with {INR}{held_outstanding:,.2f} outstanding "
+                    f"({INR}{total_held:,.2f} gross transaction value)"
+                ),
                 "   Please provide the reason, required remediation, applicable merchant-policy or agreement clause, and expected release date.",
                 f"   Please also provide the merchant-grievance contact and escalation matrix required by {config.PA_DISPUTE_REFERENCE} of {config.PA_DIRECTIONS_REFERENCE}.",
                 f"   Transaction IDs: {', '.join(t['transaction_id'] for t in s['held_funds'])}",
@@ -539,8 +577,13 @@ class ReconciliationAgent:
             n += 1
         if has_pending:
             total_pend = sum(t["amount"] for t in s["pending_funds"])
+            pending_outstanding = sum(t["outstanding_amount"] for t in s["pending_funds"])
             lines += [
-                f"{n}. PENDING SETTLEMENTS: {s['pending_count']} {transaction_word(s['pending_count'])} totalling {INR}{total_pend:,.2f}",
+                (
+                    f"{n}. PENDING SETTLEMENTS: {s['pending_count']} {transaction_word(s['pending_count'])} "
+                    f"marked pending with {INR}{pending_outstanding:,.2f} outstanding "
+                    f"({INR}{total_pend:,.2f} gross transaction value)"
+                ),
                 (
                     "   This transaction remains marked pending in the provider report. "
                     if s["pending_count"] == 1
@@ -552,8 +595,22 @@ class ReconciliationAgent:
             ]
             n += 1
         if has_timing:
+            timing_detail_lines = []
+            for violation in s["tat_violations"]:
+                elapsed = violation["days_delayed"]
+                over_window = violation["days_over_window"]
+                day_basis = config.SETTLEMENT_DAY_MODE.lower()
+                elapsed_unit = f"{day_basis} day" if elapsed == 1 else f"{day_basis} days"
+                over_unit = f"{day_basis} day" if over_window == 1 else f"{day_basis} days"
+                timing_detail_lines.append(
+                    f"   - {violation['transaction_id']}: "
+                    f"{violation['transaction_date']} to {violation['settlement_date']} "
+                    f"({elapsed} {elapsed_unit}; {over_window} {over_unit} beyond the configured window)"
+                )
             lines += [
                 f"{n}. SETTLEMENT WINDOW EXCEPTIONS: {s['tat_count']} {transaction_word(s['tat_count'])} exceeded the {config.SETTLEMENT_WINDOW_LABEL}",
+                "   Affected transactions:",
+                *timing_detail_lines,
                 f"   Please reconcile these dates against the settlement timeline stated in our agreement, as contemplated by {config.PA_SETTLEMENT_REFERENCE} of {config.PA_DIRECTIONS_REFERENCE}.",
                 "",
             ]
@@ -590,7 +647,7 @@ class ReconciliationAgent:
             "SUMMARY:",
             f"  Gross Transaction Value:  {INR}{s['total_gross']:,.2f}",
             f"  Total Settled to Bank:    {INR}{s['total_settled']:,.2f}",
-            f"  Gross Held / Pending:      {INR}{s['recovery_amount']:,.2f}",
+            f"  Outstanding Held / Pending: {INR}{s['recovery_amount']:,.2f}",
             f"  Net Recovery Requested:    {INR}{s.get('net_recovery_requested', s['recovery_amount_net']):,.2f}",
             f"  Timing Assessment:         {timing_summary}",
             "",
@@ -662,7 +719,7 @@ class ReconciliationAgent:
             ["Timing Assessment", s.get("timing_assessment_status", "complete")],
             ["Total Gross", f"{INR}{s['total_gross']:,.2f}"],
             ["Total Settled", f"{INR}{s['total_settled']:,.2f}"],
-            ["Gross Held / Pending", f"{INR}{s['recovery_amount']:,.2f}"],
+            ["Outstanding Held / Pending", f"{INR}{s['recovery_amount']:,.2f}"],
             ["Net Recovery Amount", f"{INR}{s['recovery_amount_net']:,.2f}"],
             ["Net Recovery Requested", f"{INR}{s.get('net_recovery_requested', s['recovery_amount_net']):,.2f}"],
             ["Settlement Shortfall", f"{INR}{s.get('total_settlement_shortfall', 0):,.2f}"],

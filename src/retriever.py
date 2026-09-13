@@ -36,6 +36,9 @@ def retrieve_chunks(
     Uses dynamic k based on collection size.
     Returns (chunks, actual_k_used)
     """
+    if k is not None and k <= 0:
+        raise ValueError("k must be a positive integer")
+
     client = reconnect_chroma_client() if reconnect else get_chroma_client()
     collection = get_or_create_collection(client)
 
@@ -90,6 +93,8 @@ def filter_by_threshold(
     Uses provided threshold or falls back to config.
     """
     active_threshold = threshold if threshold is not None else config.SIMILARITY_THRESHOLD
+    if not 0 <= active_threshold <= 1:
+        raise ValueError("similarity threshold must be between 0 and 1")
     return [c for c in chunks if c["similarity"] >= active_threshold]
 
 

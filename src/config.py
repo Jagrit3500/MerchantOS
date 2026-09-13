@@ -109,7 +109,7 @@ AGGREGATOR_ADDRESS = os.getenv(
 )
 AGGREGATOR_CIN = os.getenv("PAYMENT_AGGREGATOR_CIN", "U62099KA2024PTC188982")
 OMBUDSMAN_URL = os.getenv("OMBUDSMAN_URL", "https://cms.rbi.org.in")
-CONSUMER_HELP_URL = os.getenv("CONSUMER_HELP_URL", "consumerhelpline.gov.in")
+CONSUMER_HELP_URL = os.getenv("CONSUMER_HELP_URL", "https://consumerhelpline.gov.in")
 PA_DIRECTIONS_NAME = os.getenv(
     "PA_DIRECTIONS_NAME", "RBI (Regulation of Payment Aggregators) Directions, 2025"
 )
@@ -123,6 +123,9 @@ PA_DUE_DILIGENCE_REFERENCE = os.getenv(
 PA_DISPUTE_REFERENCE = os.getenv("PA_DISPUTE_REFERENCE", "paragraph 8")
 PA_SETTLEMENT_REFERENCE = os.getenv(
     "PA_SETTLEMENT_REFERENCE", "Chapter V, paragraph 16, Table 1"
+)
+PA_PRICING_REFERENCE = os.getenv(
+    "PA_PRICING_REFERENCE", "paragraph 10(c), where its MDR directions apply"
 )
 OMBUDSMAN_SCHEME_REFERENCE = os.getenv(
     "OMBUDSMAN_SCHEME_REFERENCE", "Reserve Bank - Integrated Ombudsman Scheme, 2021"
@@ -152,7 +155,12 @@ SETTLEMENT_WINDOW_LABEL = os.getenv(
     "SETTLEMENT_WINDOW_LABEL", f"configured {EXPECTED_SETTLEMENT_DAYS}-{SETTLEMENT_DAY_MODE}-day window"
 )
 FEE_OVERCHARGE_TOLERANCE = float(os.getenv("FEE_OVERCHARGE_TOLERANCE", "0.05"))
-FEE_DISPUTE_MIN_AMOUNT = float(os.getenv("FEE_DISPUTE_MIN_AMOUNT", "10"))
+RECONCILIATION_BALANCE_TOLERANCE = float(
+    os.getenv("RECONCILIATION_BALANCE_TOLERANCE", "0.01")
+)
+RECONCILIATION_ZERO_TOLERANCE = float(
+    os.getenv("RECONCILIATION_ZERO_TOLERANCE", "0.005")
+)
 HEALTH_MISSING_WEIGHT = float(os.getenv("HEALTH_MISSING_WEIGHT", "2.0"))
 HEALTH_MISSING_MAX_PENALTY = float(os.getenv("HEALTH_MISSING_MAX_PENALTY", "40"))
 HEALTH_TAT_WEIGHT = float(os.getenv("HEALTH_TAT_WEIGHT", "50"))
@@ -371,7 +379,28 @@ def _validate_settings() -> None:
         GST_RATE,
     )):
         raise ValueError("Fee and tax rates must not be negative")
+    if FEE_OVERCHARGE_TOLERANCE < 0:
+        raise ValueError("FEE_OVERCHARGE_TOLERANCE must not be negative")
+    if RECONCILIATION_BALANCE_TOLERANCE < 0 or RECONCILIATION_ZERO_TOLERANCE < 0:
+        raise ValueError("Reconciliation tolerances must not be negative")
+    if RECONCILIATION_ZERO_TOLERANCE > RECONCILIATION_BALANCE_TOLERANCE:
+        raise ValueError(
+            "RECONCILIATION_ZERO_TOLERANCE must not exceed RECONCILIATION_BALANCE_TOLERANCE"
+        )
+    if any(value < 0 for value in (
+        HEALTH_MISSING_WEIGHT,
+        HEALTH_MISSING_MAX_PENALTY,
+        HEALTH_TAT_WEIGHT,
+        HEALTH_TAT_MAX_PENALTY,
+        HEALTH_OVERCHARGE_MAX_PENALTY,
+    )):
+        raise ValueError("Health score weights and penalties must not be negative")
+    if not all((WORKSPACE_NAME, CURRENCY, CURRENCY_SYMBOL, REGION, AGGREGATOR_NAME, AGGREGATOR_SHORT)):
+        raise ValueError("Workspace, currency, region, and provider names must not be empty")
     for name, value in {
+        "GOOGLE_AUTHORIZATION_URL": GOOGLE_AUTHORIZATION_URL,
+        "GOOGLE_TOKEN_URL": GOOGLE_TOKEN_URL,
+        "GOOGLE_REDIRECT_URI": GOOGLE_REDIRECT_URI,
         "PA_DIRECTIONS_URL": PA_DIRECTIONS_URL,
         "OMBUDSMAN_URL": OMBUDSMAN_URL,
         "AGGREGATOR_KYC_URL": AGGREGATOR_KYC_URL,
@@ -379,6 +408,7 @@ def _validate_settings() -> None:
         "AGGREGATOR_GRIEVANCE_URL": AGGREGATOR_GRIEVANCE_URL,
         "AGGREGATOR_ASSISTANT_NODAL_URL": AGGREGATOR_ASSISTANT_NODAL_URL,
         "AGGREGATOR_NODAL_URL": AGGREGATOR_NODAL_URL,
+        "CONSUMER_HELP_URL": CONSUMER_HELP_URL,
     }.items():
         parsed = urlsplit(value)
         if parsed.scheme not in {"http", "https"} or not parsed.netloc:
@@ -393,6 +423,33 @@ def _validate_settings() -> None:
         raise ValueError("Escalation trigger days must be strictly increasing")
     if SUPPORT_DEADLINE_DAYS > GRIEVANCE_TRIGGER_DAYS or GRIEVANCE_DEADLINE_DAYS < NODAL_TRIGGER_DAYS:
         raise ValueError("Provider response deadlines must align with escalation trigger days")
+    workflow_windows = (
+        SUPPORT_DEADLINE_DAYS,
+        GRIEVANCE_TRIGGER_DAYS,
+        NODAL_TRIGGER_DAYS,
+        GRIEVANCE_DEADLINE_DAYS,
+        OMBUDSMAN_TRIGGER_DAYS,
+        OMBUDSMAN_DEADLINE_DAYS,
+        LEGAL_TRIGGER_DAYS,
+        GRIEVANCE_LETTER_DEADLINE_DAYS,
+        SETTLEMENT_RELEASE_REQUEST_DAYS,
+        LEGAL_NOTICE_DEADLINE_DAYS,
+        HOLD_RECENT_MAX_DAYS,
+        HOLD_STANDARD_MAX_DAYS,
+        HOLD_URGENT_TRIGGER_DAYS,
+        INITIAL_ACK_HOURS,
+        FOLLOWUP_ACK_HOURS,
+        URGENT_RESOLUTION_BUSINESS_DAYS,
+        TRANSACTION_LOOKBACK_DAYS,
+    )
+    if min(workflow_windows) <= 0:
+        raise ValueError("Recovery workflow windows must be positive")
+    if not (
+        HOLD_RECENT_MAX_DAYS < HOLD_STANDARD_MAX_DAYS < HOLD_URGENT_TRIGGER_DAYS
+    ):
+        raise ValueError("Hold-duration windows must be ordered and non-overlapping")
+    if FOLLOWUP_ACK_HOURS < INITIAL_ACK_HOURS:
+        raise ValueError("FOLLOWUP_ACK_HOURS must not be lower than INITIAL_ACK_HOURS")
 
 
 _validate_settings()

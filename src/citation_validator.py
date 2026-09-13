@@ -89,7 +89,7 @@ def _get_validation_message(
 
 def get_confidence_label(
     chunks: list[dict],
-    threshold: float = config.SIMILARITY_THRESHOLD
+    threshold: float | None = None,
 ) -> dict:
     """
     Return confidence score and label based on top similarity.
@@ -98,11 +98,15 @@ def get_confidence_label(
     if not chunks:
         return {"score": 0.0, "label": "none"}
 
+    active_threshold = threshold if threshold is not None else config.SIMILARITY_THRESHOLD
+    if not 0 <= active_threshold <= 1:
+        raise ValueError("confidence threshold must be between 0 and 1")
+
     top_score = chunks[0]["similarity"]
 
     if top_score >= config.CONFIDENCE_HIGH_THRESHOLD:
         label = "high"
-    elif top_score >= threshold:
+    elif top_score >= active_threshold:
         label = "medium"
     else:
         label = "low"
@@ -117,7 +121,7 @@ def build_final_response(
     answer: str,
     chunks: list[dict],
     is_answerable: bool,
-    threshold: float = config.SIMILARITY_THRESHOLD
+    threshold: float | None = None,
 ) -> dict:
     refusal = "I could not find this information in the uploaded PDF."
     validation = validate_citations(answer, chunks)

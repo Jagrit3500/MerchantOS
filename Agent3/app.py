@@ -1,5 +1,6 @@
 import html
 import importlib
+import logging
 import os
 import sys
 from datetime import date
@@ -28,6 +29,7 @@ inject_theme()
 require_auth("agent3")
 nav("agent3")
 agent = EscalationAgent()
+LOGGER = logging.getLogger(__name__)
 
 
 def fetch_policy_evidence(issue_key: str, use_live_retrieval: bool = True) -> dict:
@@ -51,7 +53,7 @@ def fetch_policy_evidence(issue_key: str, use_live_retrieval: bool = True) -> di
                 source = chunks[0].get("source", source)
             retrieval = "Semantic policy search"
         except Exception:
-            pass
+            LOGGER.debug("Semantic policy retrieval failed; using local evidence", exc_info=True)
     return {"answer": evidence, "source": source, "retrieval": retrieval}
 
 st.markdown(
