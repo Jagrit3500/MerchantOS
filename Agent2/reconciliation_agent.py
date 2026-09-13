@@ -7,7 +7,8 @@ from __future__ import annotations
 import os, sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from src import config
-import csv, io, math
+import csv, io, math, re
+from decimal import Decimal, InvalidOperation
 from datetime import date, datetime
 
 # ─── Configured fee rates ───────────────────────────────────────────────
@@ -39,7 +40,37 @@ FEE_DEFAULT = (_mdr_default, _gst)
 # Merchant/provider agreements define settlement timing under the 2025 PA Directions.
 # MerchantOS compares reports with this operator-configured expectation.
 TAT_CALENDAR_DAYS = int(config.TAT_CALENDAR_DAYS)
-KNOWN_STATUSES = {"settled", "on_hold", "hold", "pending", "processing"}
+BALANCE_TOLERANCE = 0.01
+
+STATUS_ALIASES = {
+    "settled": "settled",
+    "success": "settled",
+    "successful": "settled",
+    "paid": "settled",
+    "completed": "settled",
+    "processed": "settled",
+    "on_hold": "on_hold",
+    "onhold": "on_hold",
+    "hold": "on_hold",
+    "held": "on_hold",
+    "pending": "pending",
+    "processing": "pending",
+    "in_process": "pending",
+    "in_progress": "pending",
+}
+
+METHOD_ALIASES = {
+    "upi": "upi",
+    "card": "card",
+    "credit_card": "credit_card",
+    "debit_card": "debit_card",
+    "netbanking": "netbanking",
+    "net_banking": "netbanking",
+    "wallet": "wallet",
+    "emi": "emi",
+    "paylater": "paylater",
+    "pay_later": "paylater",
+}
 
 # Column name aliases so we accept many CSV formats
 COL_ALIASES: dict[str, list[str]] = {
@@ -77,13 +108,41 @@ class ReconciliationAgent:
     def _normalize_cols(self, headers: list[str]) -> dict[str, str]:
         """Map raw CSV header -> normalized column name."""
         col_map: dict[str, str] = {}
-        h_lookup = {h.strip().lower().replace(" ", "_"): h for h in headers}
+        h_lookup = {self._normalize_token(h.lstrip("\ufeff")): h for h in headers}
         for norm, aliases in COL_ALIASES.items():
             for alias in aliases:
-                if alias in h_lookup:
-                    col_map[h_lookup[alias]] = norm
+                alias_key = self._normalize_token(alias)
+                if alias_key in h_lookup:
+                    col_map[h_lookup[alias_key]] = norm
                     break
         return col_map
+
+    @staticmethod
+    def _normalize_token(value: str) -> str:
+        return re.sub(r"[^a-z0-9]+", "_", str(value).strip().lower()).strip("_")
+
+    @staticmethod
+    def _parse_money(value: str, field: str) -> float:
+        raw = str(value or "").strip()
+        if not raw:
+            return 0.0
+        negative_parentheses = raw.startswith("(") and raw.endswith(")")
+        if negative_parentheses:
+            raw = "-" + raw[1:-1]
+        cleaned = raw.replace(",", "").replace(config.CURRENCY_SYMBOL, "").strip()
+        cleaned = re.sub(r"^(?:inr|rs\.?)\s*", "", cleaned, flags=re.IGNORECASE)
+        try:
+            number = float(Decimal(cleaned))
+        except (InvalidOperation, ValueError):
+            raise ValueError(f"invalid {field}: {value or '(empty)'}") from None
+        if not math.isfinite(number):
+            raise ValueError(f"non-finite value in {field}")
+        return number
+
+    @classmethod
+    def _normalize_method(cls, value: str) -> str:
+        key = cls._normalize_token(value)
+        return METHOD_ALIASES.get(key, key)
 
     def _missing_cols(self, col_map: dict) -> list[str]:
         found = set(col_map.values())
@@ -122,6 +181,10 @@ class ReconciliationAgent:
                     continue
                 seen_transaction_ids.add(transaction_id)
                 self.transactions.append(transaction)
+                if transaction.get("_uses_default_fee_rate"):
+                    warnings.append(
+                        f"Row {i}: payment method '{transaction['payment_method']}' uses the configured default fee rate."
+                    )
             except Exception as exc:
                 warnings.append(f"Row {i} skipped: {exc}")
 
@@ -134,23 +197,20 @@ class ReconciliationAgent:
         return default
 
     def _parse_row(self, row: dict) -> dict:
-        amount  = float(self._get(row, "amount")           or 0)
-        fee     = float(self._get(row, "fee")              or 0)
-        tax     = float(self._get(row, "tax")              or 0)
-        settle  = float(self._get(row, "settlement_amount")or 0)
-        numeric_values = {
-            "amount": amount,
-            "fee": fee,
-            "tax": tax,
-            "settlement_amount": settle,
-        }
-        invalid = [name for name, value in numeric_values.items() if not math.isfinite(value)]
-        if invalid:
-            raise ValueError(f"non-finite value in {', '.join(invalid)}")
-        if amount < 0 or fee < 0 or tax < 0 or settle < 0:
+        amount = self._parse_money(self._get(row, "amount"), "amount")
+        fee = self._parse_money(self._get(row, "fee"), "fee")
+        tax = self._parse_money(self._get(row, "tax"), "tax")
+        settle = self._parse_money(self._get(row, "settlement_amount"), "settlement amount")
+        if amount <= 0:
+            raise ValueError("amount must be greater than zero")
+        if fee < 0 or tax < 0 or settle < 0:
             raise ValueError("amount, fee, tax, and settlement amount must not be negative")
-        method  = self._get(row, "payment_method")
-        status  = self._get(row, "status").lower().replace(" ", "_")
+        if fee + tax > amount + BALANCE_TOLERANCE:
+            raise ValueError("fee and tax exceed the gross amount")
+        method_raw = self._get(row, "payment_method")
+        method = self._normalize_method(method_raw)
+        status_raw = self._normalize_token(self._get(row, "status"))
+        status = STATUS_ALIASES.get(status_raw)
         transaction_id = self._get(row, "transaction_id")
         transaction_date = self._get(row, "transaction_date")
         settlement_date = self._get(row, "settlement_date")
@@ -160,8 +220,8 @@ class ReconciliationAgent:
             raise ValueError("transaction ID is empty")
         if not method:
             raise ValueError("payment method is empty")
-        if status not in KNOWN_STATUSES:
-            raise ValueError(f"unsupported status: {status or '(empty)'}")
+        if not status:
+            raise ValueError(f"unsupported status: {status_raw or '(empty)'}")
         if transaction_date and not txn_d:
             raise ValueError(f"unsupported transaction date: {transaction_date}")
         if settlement_date and not set_d:
@@ -182,15 +242,21 @@ class ReconciliationAgent:
             "transaction_date":  transaction_date or "-",
             "_txn_date":         txn_d,
             "_set_date":         set_d,
+            "_uses_default_fee_rate": method not in FEE_RATES,
         }
 
     @staticmethod
     def _parse_date(s: str):
         if not s or s in ("-", ""):
             return None
-        for fmt in ("%Y-%m-%d", "%d-%m-%Y", "%d/%m/%Y", "%Y/%m/%d", "%d %b %Y"):
+        value = s.strip()
+        try:
+            return datetime.fromisoformat(value.replace("Z", "+00:00")).date()
+        except ValueError:
+            pass
+        for fmt in ("%Y-%m-%d", "%d-%m-%Y", "%d/%m/%Y", "%Y/%m/%d", "%d %b %Y", "%d %B %Y"):
             try:
-                return datetime.strptime(s.strip(), fmt).date()
+                return datetime.strptime(value, fmt).date()
             except ValueError:
                 continue
         return None
@@ -223,10 +289,12 @@ class ReconciliationAgent:
         total_gross = total_fee = total_tax = total_settled = 0.0
         total_exp_fee = total_exp_tax = 0.0
         total_fee_overcharge = total_tax_overcharge = 0.0
-        held, pending, overcharged, tat_violations = [], [], [], []
+        held, pending, overcharged, tat_violations, settlement_differences = [], [], [], [], []
         missing: list[dict] = []
         method_stats: dict[str, dict] = {}
         settled_count = held_count = pending_count = tat_count = 0
+        timing_evaluable_count = 0
+        total_settlement_shortfall = total_settlement_excess = 0.0
 
         for txn in self.transactions:
             amt    = txn["amount"]
@@ -266,10 +334,29 @@ class ReconciliationAgent:
                     "overcharge": round(fee_overcharge + tax_overcharge, 2),
                 })
 
+            expected_net = round(amt - fee - tax, 2)
+            settlement_delta = round(expected_net - txn["settlement_amount"], 2)
+            should_check_balance = status == "settled" or settlement_delta < -BALANCE_TOLERANCE
+            if should_check_balance and abs(settlement_delta) > BALANCE_TOLERANCE:
+                difference_type = "shortfall" if settlement_delta > 0 else "excess"
+                shortfall = max(settlement_delta, 0.0)
+                excess = max(-settlement_delta, 0.0)
+                total_settlement_shortfall += shortfall
+                total_settlement_excess += excess
+                settlement_differences.append({
+                    **txn,
+                    "expected_net_settlement": expected_net,
+                    "settlement_difference": settlement_delta,
+                    "difference_type": difference_type,
+                    "shortfall": round(shortfall, 2),
+                    "excess": round(excess, 2),
+                })
+
             # TAT violation
             td = txn.get("_txn_date")
             sd = txn.get("_set_date")
             if td and sd:
+                timing_evaluable_count += 1
                 days_diff = self._settlement_elapsed_days(td, sd)
                 if days_diff > TAT_CALENDAR_DAYS:
                     tat_count += 1
@@ -282,11 +369,11 @@ class ReconciliationAgent:
             # Status
             if status == "settled":
                 settled_count += 1
-            elif status in ("on_hold", "hold"):
+            elif status == "on_hold":
                 held_count += 1
                 held.append(txn)
                 missing.append({**txn, "issue": "on_hold"})
-            elif status in ("pending", "processing"):
+            elif status == "pending":
                 pending_count += 1
                 pending.append(txn)
                 missing.append({**txn, "issue": "pending"})
@@ -297,19 +384,42 @@ class ReconciliationAgent:
                 method_stats[mk] = {"count": 0, "gross": 0.0, "held": 0, "pending": 0}
             method_stats[mk]["count"] += 1
             method_stats[mk]["gross"] += amt
-            if status in ("on_hold", "hold"):
+            if status == "on_hold":
                 method_stats[mk]["held"] += 1
-            elif status in ("pending", "processing"):
+            elif status == "pending":
                 method_stats[mk]["pending"] += 1
 
         total_fee_overcharge = round(total_fee_overcharge, 2)
         total_tax_overcharge = round(total_tax_overcharge, 2)
         total_overcharge = round(total_fee_overcharge + total_tax_overcharge, 2)
+        total_settlement_shortfall = round(total_settlement_shortfall, 2)
+        total_settlement_excess = round(total_settlement_excess, 2)
         recovery_amount = round(sum(
             max(t["amount"] - t["settlement_amount"], 0) for t in held + pending
         ), 2)
         recovery_amount_net = round(
             sum(max(t["amount"] - t["fee"] - t["tax"] - t["settlement_amount"], 0) for t in held + pending), 2
+        )
+        residual_variance = round(total_gross - total_settled - recovery_amount_net - total_fee - total_tax, 2)
+        if abs(residual_variance) < 0.005:
+            residual_variance = 0.0
+        issue_ids = {
+            txn["transaction_id"]
+            for group in (held, pending, overcharged, tat_violations, settlement_differences)
+            for txn in group
+        }
+        timing_missing_count = len(self.transactions) - timing_evaluable_count
+        timing_assessment_status = (
+            "complete"
+            if timing_evaluable_count == len(self.transactions)
+            else "unavailable"
+            if timing_evaluable_count == 0
+            else "partial"
+        )
+        amount_to_review = round(recovery_amount + total_settlement_shortfall + total_settlement_excess, 2)
+        net_recovery_requested = round(
+            recovery_amount_net + total_settlement_shortfall + total_overcharge,
+            2,
         )
 
         self.summary = {
@@ -318,6 +428,9 @@ class ReconciliationAgent:
             "held_count":         held_count,
             "pending_count":      pending_count,
             "tat_count":          tat_count,
+            "timing_evaluable_count": timing_evaluable_count,
+            "timing_missing_count": timing_missing_count,
+            "timing_assessment_status": timing_assessment_status,
             "total_gross":        round(total_gross,   2),
             "total_settled":      round(total_settled, 2),
             "total_fee_charged":  round(total_fee,     2),
@@ -327,6 +440,13 @@ class ReconciliationAgent:
             "total_fee_overcharge": total_fee_overcharge,
             "total_tax_overcharge": total_tax_overcharge,
             "total_overcharge":   total_overcharge,
+            "total_settlement_shortfall": total_settlement_shortfall,
+            "total_settlement_excess": total_settlement_excess,
+            "settlement_difference_count": len(settlement_differences),
+            "exception_transaction_count": len(issue_ids),
+            "amount_to_review": amount_to_review,
+            "net_recovery_requested": net_recovery_requested,
+            "residual_variance": residual_variance,
             "recovery_amount":    recovery_amount,
             "recovery_amount_net": recovery_amount_net,
             "missing_settlements":missing,
@@ -334,19 +454,20 @@ class ReconciliationAgent:
             "held_funds":         held,
             "pending_funds":      pending,
             "tat_violations":     tat_violations,
+            "settlement_differences": settlement_differences,
             "method_stats":       method_stats,
             "health_score":       self._health_score(
                 len(self.transactions), held_count, pending_count,
-                tat_count, total_overcharge
+                tat_count, total_overcharge, len(settlement_differences)
             ),
         }
         return self.summary
 
-    def _health_score(self, total, held, pending, tat, overcharge) -> dict:
+    def _health_score(self, total, held, pending, tat, overcharge, balance_differences=0) -> dict:
         if total == 0:
             return {"score": 0, "label": "No Data", "color": "gray"}
         score = 100
-        miss_pct = (held + pending) / total * 100
+        miss_pct = (held + pending + balance_differences) / total * 100
         score -= min(miss_pct * config.HEALTH_MISSING_WEIGHT, config.HEALTH_MISSING_MAX_PENALTY)
         score -= min((tat / max(total, 1)) * config.HEALTH_TAT_WEIGHT, config.HEALTH_TAT_MAX_PENALTY)
         score -= min(max(overcharge, 0) / config.HEALTH_OVERCHARGE_DIVISOR, config.HEALTH_OVERCHARGE_MAX_PENALTY)
@@ -361,46 +482,108 @@ class ReconciliationAgent:
         if not s:
             return "Run analyze() first."
         agg_short = config.AGGREGATOR_SHORT
+        has_held = s.get("held_count", 0) > 0
+        has_pending = s.get("pending_count", 0) > 0
+        has_timing = s.get("tat_count", 0) > 0
+        has_fee_difference = s.get("total_overcharge", 0) > config.FEE_DISPUTE_MIN_AMOUNT
+        has_settlement_difference = s.get("settlement_difference_count", 0) > 0
+        has_exceptions = has_held or has_pending or has_timing or has_fee_difference or has_settlement_difference
+        transaction_word = lambda count: "transaction" if count == 1 else "transactions"
+        timing_status = s.get("timing_assessment_status", "complete")
+        timing_evaluable = s.get("timing_evaluable_count", s.get("total_transactions", 0))
+        if timing_status == "unavailable":
+            timing_summary = "Not assessed - transaction and settlement dates were not supplied."
+        elif timing_status == "partial":
+            timing_summary = (
+                f"Partially assessed - {timing_evaluable} of {s['total_transactions']} transactions "
+                f"had both required dates; {s['tat_count']} exceptions were identified in those rows."
+            )
+        else:
+            timing_summary = (
+                f"Assessed for all {s['total_transactions']} transactions; "
+                f"{s['tat_count']} timing exceptions were identified."
+            )
+        if has_held or has_pending:
+            subject = "Settlement Reconciliation Request - Held or Pending Funds"
+        elif has_exceptions:
+            subject = "Settlement Reconciliation Review - Exceptions Identified"
+        else:
+            subject = "Settlement Reconciliation Confirmation"
         lines = [
-            f"Subject: Settlement Reconciliation Dispute - Missing/Held Funds (Account: [YOUR_MERCHANT_ID])",
+            f"Subject: {subject} (Account: [YOUR_MERCHANT_ID])",
             "",
             f"Dear {agg_short} Settlements Team,",
             "",
-            "I am formally disputing settlement discrepancies in account [YOUR_MERCHANT_ID].",
-            "After reconciling my records, I have identified the following issues:",
+            (
+                "I am requesting review of settlement discrepancies in account [YOUR_MERCHANT_ID]."
+                if has_exceptions
+                else f"I have reconciled the {transaction_word(s['total_transactions'])} below for account [YOUR_MERCHANT_ID]."
+            ),
+            (
+                "After reconciling my records, I identified the following items:"
+                if has_exceptions
+                else "The audit found no hold, pending settlement, fee difference, or settlement balance difference under the configured account rules."
+            ),
             "",
         ]
         n = 1
-        if s.get("held_count", 0) > 0:
+        if has_held:
             total_held = sum(t["amount"] for t in s["held_funds"])
             lines += [
-                f"{n}. FUNDS ON HOLD: {s['held_count']} transaction(s) totalling {INR}{total_held:,.2f}",
-                f"   Please provide the reason, required remediation, and expected release date under your published merchant policy and {config.PA_DISPUTE_REFERENCE} of {config.PA_DIRECTIONS_REFERENCE}.",
+                f"{n}. FUNDS ON HOLD: {s['held_count']} {transaction_word(s['held_count'])} totalling {INR}{total_held:,.2f}",
+                "   Please provide the reason, required remediation, applicable merchant-policy or agreement clause, and expected release date.",
+                f"   Please also provide the merchant-grievance contact and escalation matrix required by {config.PA_DISPUTE_REFERENCE} of {config.PA_DIRECTIONS_REFERENCE}.",
                 f"   Transaction IDs: {', '.join(t['transaction_id'] for t in s['held_funds'])}",
                 "",
             ]
             n += 1
-        if s.get("pending_count", 0) > 0:
+        if has_pending:
             total_pend = sum(t["amount"] for t in s["pending_funds"])
             lines += [
-                f"{n}. PENDING SETTLEMENTS: {s['pending_count']} transaction(s) totalling {INR}{total_pend:,.2f}",
-                f"   These items exceed the {config.SETTLEMENT_WINDOW_LABEL} used for this audit.",
+                f"{n}. PENDING SETTLEMENTS: {s['pending_count']} {transaction_word(s['pending_count'])} totalling {INR}{total_pend:,.2f}",
+                (
+                    "   This transaction remains marked pending in the provider report. "
+                    if s["pending_count"] == 1
+                    else "   These transactions remain marked pending in the provider report. "
+                )
+                + "Please confirm the applicable settlement schedule and expected settlement date.",
                 f"   Transaction IDs: {', '.join(t['transaction_id'] for t in s['pending_funds'])}",
                 "",
             ]
             n += 1
-        if s.get("tat_count", 0) > 0:
+        if has_timing:
             lines += [
-                f"{n}. SETTLEMENT WINDOW EXCEPTIONS: {s['tat_count']} transaction(s) exceeded the {config.SETTLEMENT_WINDOW_LABEL}",
+                f"{n}. SETTLEMENT WINDOW EXCEPTIONS: {s['tat_count']} {transaction_word(s['tat_count'])} exceeded the {config.SETTLEMENT_WINDOW_LABEL}",
                 f"   Please reconcile these dates against the settlement timeline stated in our agreement, as contemplated by {config.PA_SETTLEMENT_REFERENCE} of {config.PA_DIRECTIONS_REFERENCE}.",
                 "",
             ]
             n += 1
-        if s.get("total_overcharge", 0) > config.FEE_DISPUTE_MIN_AMOUNT:
+        if has_settlement_difference:
+            differences = s["settlement_differences"]
+            shortfall = s["total_settlement_shortfall"]
+            excess = s["total_settlement_excess"]
+            if shortfall and excess:
+                difference_label = "SETTLEMENT BALANCE DIFFERENCES"
+                amount_line = f"Shortfall: {INR}{shortfall:,.2f} | Excess settlement: {INR}{excess:,.2f}"
+            elif shortfall:
+                difference_label = "SETTLEMENT SHORTFALL"
+                amount_line = f"Net amount not reconciled to the recorded settlement: {INR}{shortfall:,.2f}"
+            else:
+                difference_label = "EXCESS SETTLEMENT DIFFERENCE"
+                amount_line = f"Settlement recorded above the calculated net amount: {INR}{excess:,.2f}"
             lines += [
-                f"{n}. FEE / TAX OVERCHARGE: {INR}{s['total_overcharge']:,.2f} charged above configured rates",
+                f"{n}. {difference_label}: {len(differences)} {transaction_word(len(differences))}",
+                f"   {amount_line}",
+                "   Please verify the gross amount, charged fee and tax, and bank settlement for each listed transaction.",
+                f"   Transaction IDs: {', '.join(t['transaction_id'] for t in differences)}",
+                "",
+            ]
+            n += 1
+        if has_fee_difference:
+            lines += [
+                f"{n}. FEE / TAX DIFFERENCE: {INR}{s['total_overcharge']:,.2f} above the configured pricing benchmark",
                 f"   Fee difference: {INR}{s['total_fee_overcharge']:,.2f} | Tax difference: {INR}{s['total_tax_overcharge']:,.2f}",
-                "   Please credit the excess amount with a detailed fee breakup.",
+                "   Please confirm the contracted rates, provide a detailed fee breakup, and credit any confirmed excess charge.",
                 "",
             ]
         lines += [
@@ -408,18 +591,47 @@ class ReconciliationAgent:
             f"  Gross Transaction Value:  {INR}{s['total_gross']:,.2f}",
             f"  Total Settled to Bank:    {INR}{s['total_settled']:,.2f}",
             f"  Gross Held / Pending:      {INR}{s['recovery_amount']:,.2f}",
-            f"  Net Recovery Requested:    {INR}{s['recovery_amount_net']:,.2f}",
+            f"  Net Recovery Requested:    {INR}{s.get('net_recovery_requested', s['recovery_amount_net']):,.2f}",
+            f"  Timing Assessment:         {timing_summary}",
             "",
             "I REQUEST:",
-            "  1. Written explanation citing specific RBI provision for each hold",
-            f"  2. Settlement of eligible transactions within {config.SETTLEMENT_RELEASE_REQUEST_DAYS} business days",
-            "  3. Credit of excess fees with a detailed breakdown",
-            "  4. A certified reconciliation statement",
-            "",
-            f"If unresolved within {config.GRIEVANCE_TRIGGER_DAYS} business days, I will escalate to:",
-            f"  - {config.AGGREGATOR_SHORT} Grievance Officer: {config.AGGREGATOR_GRIEVANCE_EMAIL}",
-            f"  - RBI Integrated Ombudsman: {config.OMBUDSMAN_URL}",
-            "",
+        ]
+        requests: list[str] = []
+        if has_held:
+            requests.append(
+                "The specific reason for each hold, required remediation, the applicable merchant-policy "
+                "or agreement clause, and the expected review or settlement date"
+            )
+        if has_pending:
+            requests.append(
+                "Confirmation of the settlement schedule applicable to this account and the expected settlement date"
+            )
+        if has_timing:
+            requests.append(
+                "An explanation for the recorded delay and confirmation of the settlement schedule applicable to this account"
+            )
+        if has_settlement_difference:
+            requests.append(
+                "A transaction-level reconciliation of each settlement balance difference and correction of any confirmed shortfall"
+            )
+        if has_fee_difference:
+            requests.append("A detailed fee and tax breakdown and credit of any confirmed excess charge")
+        requests.append(f"A detailed reconciliation statement for the listed {transaction_word(s['total_transactions'])}")
+        lines.extend(f"  {index}. {request}" for index, request in enumerate(requests, 1))
+        lines.append("")
+        if has_exceptions:
+            lines += [
+                "If this remains unresolved, I will use your published merchant grievance escalation matrix:",
+                f"  - Level 1 support: {config.AGGREGATOR_SUPPORT_URL}",
+                f"  - Published escalation policy: {getattr(config, 'AGGREGATOR_GRIEVANCE_URL', config.AGGREGATOR_SUPPORT_URL)}",
+                f"  - Nodal Officer: {config.AGGREGATOR_GRIEVANCE_EMAIL}",
+                (
+                    "  - I will assess eligibility for external remedies separately based on entity coverage, "
+                    f"the applicable waiting period, and the requirements at {config.OMBUDSMAN_URL}"
+                ),
+                "",
+            ]
+        lines += [
             "Merchant ID: [YOUR_MERCHANT_ID]",
             "Registered Email: [YOUR_REGISTERED_EMAIL]",
             f"Date: {date.today().strftime('%d %B %Y')}",
@@ -446,23 +658,38 @@ class ReconciliationAgent:
             ["On Hold", s["held_count"]],
             ["Pending", s["pending_count"]],
             ["TAT Violations", s["tat_count"]],
+            ["Timing Rows Assessed", s.get("timing_evaluable_count", s["total_transactions"])],
+            ["Timing Assessment", s.get("timing_assessment_status", "complete")],
             ["Total Gross", f"{INR}{s['total_gross']:,.2f}"],
             ["Total Settled", f"{INR}{s['total_settled']:,.2f}"],
             ["Gross Held / Pending", f"{INR}{s['recovery_amount']:,.2f}"],
             ["Net Recovery Amount", f"{INR}{s['recovery_amount_net']:,.2f}"],
-            ["Fee Overcharge", f"{INR}{s['total_fee_overcharge']:,.2f}"],
-            ["Tax Overcharge", f"{INR}{s['total_tax_overcharge']:,.2f}"],
+            ["Net Recovery Requested", f"{INR}{s.get('net_recovery_requested', s['recovery_amount_net']):,.2f}"],
+            ["Settlement Shortfall", f"{INR}{s.get('total_settlement_shortfall', 0):,.2f}"],
+            ["Settlement Excess", f"{INR}{s.get('total_settlement_excess', 0):,.2f}"],
+            ["Residual Variance", f"{INR}{s.get('residual_variance', 0):,.2f}"],
+            ["Fee Difference", f"{INR}{s['total_fee_overcharge']:,.2f}"],
+            ["Tax Difference", f"{INR}{s['total_tax_overcharge']:,.2f}"],
             ["Health Score", f"{s['health_score']['score']}/100 ({s['health_score']['label']})"],
             [],
             ["TRANSACTION DETAILS"],
             ["Transaction ID", "Order ID", "Amount", "Fee", "Tax", "Settlement Amt",
              "Status", "Method", "TXN Date", "Settlement Date", "Issue"],
         ]
+        issues_by_transaction: dict[str, list[str]] = {}
+        for key, label in [
+            ("held_funds", "HELD"),
+            ("pending_funds", "PENDING"),
+            ("tat_violations", "SETTLEMENT WINDOW EXCEPTION"),
+            ("overcharged_fees", "FEE / TAX DIFFERENCE"),
+            ("settlement_differences", "SETTLEMENT BALANCE DIFFERENCE"),
+        ]:
+            for item in s.get(key, []):
+                labels = issues_by_transaction.setdefault(item["transaction_id"], [])
+                if label not in labels:
+                    labels.append(label)
         for txn in self.transactions:
-            issue = ""
-            st = txn["status"]
-            if st in ("on_hold", "hold"):     issue = "HELD"
-            elif st in ("pending","processing"): issue = "PENDING"
+            issue = " | ".join(issues_by_transaction.get(txn["transaction_id"], []))
             rows.append([
                 txn["transaction_id"], txn["order_id"],
                 f"{txn['amount']:.2f}", f"{txn['fee']:.2f}", f"{txn['tax']:.2f}",
