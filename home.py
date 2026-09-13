@@ -15,7 +15,6 @@ from src.ui import (
     badge,
     esc,
     footer,
-    hero,
     inject_theme,
     metric,
     nav,
@@ -60,10 +59,20 @@ def state_caption(state: dict | None) -> str:
         return f"Latest successful reconciliation · {source}"
 
 
-hero(
-    "MERCHANT OPERATIONS / COMMAND CENTER",
-    "Recover revenue with clear evidence.",
-    "Diagnose account restrictions, reconcile every payout, and prepare the right escalation from one focused workspace.",
+st.markdown(
+    '<section class="home-hero">'
+    '<div class="home-hero-copy"><div class="home-kicker"><i></i> MERCHANT RECOVERY COMMAND</div>'
+    '<h1>See the money.<br><em>Move the case.</em></h1>'
+    '<p>One calm operating view for restrictions, settlements, and escalation—connected by the same evidence trail.</p>'
+    '<div class="home-hero-actions"><span>Diagnose</span><b>→</b><span>Reconcile</span><b>→</b><span>Escalate</span></div></div>'
+    '<div class="home-radar" aria-hidden="true"><div class="radar-ring ring-a"></div><div class="radar-ring ring-b"></div>'
+    '<div class="radar-core"><span>RECOVERY</span><strong>M</strong><small>CONTROL</small></div>'
+    '<div class="radar-node node-a"><i></i><span>Holds</span></div><div class="radar-node node-b"><i></i><span>Payouts</span></div>'
+    '<div class="radar-node node-c"><i></i><span>Cases</span></div></div>'
+    '</section>'
+    '<div class="home-command-strip"><span><b>01</b> Find the blocker</span><span><b>02</b> Prove the balance</span>'
+    '<span><b>03</b> Send the right response</span><small>Evidence stays connected across every workspace</small></div>',
+    unsafe_allow_html=True,
 )
 
 
@@ -98,7 +107,7 @@ def live_workspace() -> None:
     else:
         st.caption("No report has been analyzed yet. Open Reconciliation and upload a settlement CSV to populate this dashboard.")
 
-    section_title("Choose the next action", "Three connected recovery workflows")
+    section_title("Choose the next move", "Three focused workspaces, one connected recovery trail")
     with st.container(key="home_actions"):
         cards = st.columns(3, gap="large")
         card_data = [
@@ -131,6 +140,7 @@ def live_workspace() -> None:
             with column:
                 with panel(title, eyebrow):
                     tone = "good" if service_states[key] else "warn"
+                    st.markdown(f'<div class="home-workflow-index">{eyebrow.split()[0]}</div>', unsafe_allow_html=True)
                     st.markdown(badge("Online" if service_states[key] else "Starting", tone), unsafe_allow_html=True)
                     st.write(body)
                     same_tab_link(f"{action} →", urls[key])
@@ -170,7 +180,7 @@ def live_workspace() -> None:
             )
 
         with status_col:
-            with panel("Workspace status", "Local service readiness"):
+            with panel("Workspace status", "Live local service readiness", key="home-readiness"):
                 for key, label in [
                     ("agent1", "KYC diagnosis"),
                     ("agent2", "Reconciliation"),
