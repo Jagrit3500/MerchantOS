@@ -20,7 +20,7 @@ import src.ui as _ui
 
 # Refresh shared presentation helpers when an existing Streamlit session reruns.
 importlib.reload(_ui)
-from src.ui import activity_history, badge, footer, hero, inject_theme, metric, nav, note, panel, require_auth, section_title, steps
+from src.ui import activity_history, badge, footer, inject_theme, metric, nav, note, panel, require_auth, section_title, steps
 
 
 st.set_page_config(page_title="MerchantOS · Formal Escalation", page_icon="M", layout="wide", initial_sidebar_state="expanded")
@@ -54,18 +54,26 @@ def fetch_policy_evidence(issue_key: str, use_live_retrieval: bool = True) -> di
             pass
     return {"answer": evidence, "source": source, "retrieval": retrieval}
 
-hero(
-    "RECOVERY / CORRESPONDENCE",
-    "A considered next step.",
-    "Bring your case details, evidence, and formal correspondence together in one place.",
+st.markdown(
+    '<section class="a3-hero">'
+    '<div class="a3-hero-copy"><div class="a3-kicker"><i></i> RECOVERY CORRESPONDENCE DESK</div>'
+    '<h1>Make the record impossible to ignore.</h1>'
+    '<p>Build a precise case file, match every claim to evidence, and prepare the next response with the right level of restraint.</p>'
+    '<div class="a3-hero-tags"><span>Structured case file</span><span>Evidence-led drafts</span><span>Current escalation routes</span></div></div>'
+    '<div class="a3-hero-visual" aria-hidden="true"><div class="a3-orbit orbit-one"></div><div class="a3-orbit orbit-two"></div>'
+    '<div class="a3-seal"><span>CASE</span><strong>03</strong><small>READY DESK</small></div>'
+    '<div class="a3-signal signal-one"></div><div class="a3-signal signal-two"></div></div>'
+    '</section>',
+    unsafe_allow_html=True,
 )
+steps(["Build the record", "Match the evidence", "Prepare the response"], 0)
 main, context = st.columns([1.9, 1], gap="large")
 with main:
-    details_tab, evidence_tab, drafts_tab = st.tabs(["01  Case details", "02  Evidence", "03  Correspondence"])
+    details_tab, evidence_tab, drafts_tab = st.tabs(["01  Case file", "02  Evidence room", "03  Correspondence"])
 
 with details_tab:
-    with panel("Case details", "Enter the merchant profile and the dispute timeline."):
-        st.markdown("### Merchant profile")
+    with panel("Open a case", "Start with facts the provider can verify.", key="a3-case-form"):
+        st.markdown('<div class="a3-form-section"><span>01</span><div><strong>Merchant identity</strong><small>Required sender and account details</small></div></div>', unsafe_allow_html=True)
         row1 = st.columns(3)
         merchant_name = row1[0].text_input("Full name *", placeholder="Rahul Sharma")
         business_name = row1[1].text_input("Business or legal entity *", placeholder="ShopEasy Retail Pvt Ltd")
@@ -76,7 +84,7 @@ with details_tab:
         state = row2[2].text_input("State or UT", placeholder="Karnataka")
         address = st.text_area("Registered address", placeholder="Business address for the legal notice", height=78)
 
-        st.markdown("### Dispute record")
+        st.markdown('<div class="a3-form-section"><span>02</span><div><strong>Dispute record</strong><small>What happened, when, and for how much</small></div></div>', unsafe_allow_html=True)
         row3 = st.columns(3)
         issue_type = row3[0].selectbox("Dispute category *", list(ISSUE_TYPES), format_func=ISSUE_TYPES.get)
         amount = row3[1].text_input(f"Disputed amount ({config.CURRENCY_SYMBOL})", placeholder="45000.00")
@@ -142,11 +150,12 @@ with details_tab:
 
 
 with evidence_tab:
-    section_title("Documents to collect", "Tick each item as you prepare it")
-    with st.container(border=True):
+    section_title("Evidence room", "Build a packet that can survive hand-offs")
+    with st.container(border=True, key="a3-evidence-list"):
+        st.markdown('<div class="a3-evidence-intro"><span>CHECKLIST</span><strong>Collect the source record</strong><small>Tick an item only when the copy is clear, dated, and ready to attach.</small></div>', unsafe_allow_html=True)
         for index, item in enumerate(evidence):
             st.checkbox(item, key=f"a3_ev_{issue_type}_{index}")
-    with panel("Supporting policy evidence", "Fetched automatically for the selected dispute category."):
+    with panel("Supporting policy evidence", "Matched to the selected dispute category—not a legal conclusion.", key="a3-policy-source"):
         policy = st.session_state.get("a3_policy_evidence", {})
         st.caption(f'{policy.get("source", "Local policy library")} · {policy.get("retrieval", "Local document search")}')
         st.markdown(policy.get("answer", "No supporting policy evidence is available yet."))
@@ -157,20 +166,20 @@ with evidence_tab:
 
 
 with drafts_tab:
-    section_title("Your correspondence", "Generated from the case details")
+    section_title("Correspondence studio", "Three routes, each with a different threshold")
     grievance = agent.draft_grievance_letter(merchant, issue)
     ombudsman = agent.draft_rbi_ombudsman_complaint(merchant, issue)
     legal = agent.draft_legal_notice(merchant, issue)
     tab1, tab2, tab3, tab4 = st.tabs(["Grievance letter", "Ombudsman complaint", "Legal notice", "Filing guide"])
 
     with tab1:
-        st.markdown("### Tier 2 · Grievance Officer")
+        st.markdown("### Provider grievance letter")
         st.caption("Review placeholders, confirm the facts, and attach the evidence listed above.")
         grievance_edited = st.text_area("Grievance letter", grievance, height=380, label_visibility="collapsed", key="a3_grievance_edit")
         st.download_button("Download grievance letter", grievance_edited, f"{config.AGGREGATOR_SHORT.lower()}_grievance_letter.txt", "text/plain", width="stretch")
 
     with tab2:
-        st.markdown("### Tier 3 · RBI Integrated Ombudsman")
+        st.markdown("### RBI Ombudsman complaint draft")
         st.warning("Days elapsed alone do not establish eligibility. Confirm that the complained-against entity is covered, a prior written complaint was made, and no Scheme exclusion applies.")
         if days_elapsed < config.OMBUDSMAN_TRIGGER_DAYS:
             st.warning(f"This issue has been open for {days_elapsed} days. Standard Ombudsman escalation generally begins after {config.OMBUDSMAN_TRIGGER_DAYS} days without satisfactory resolution.")
@@ -178,7 +187,7 @@ with drafts_tab:
         st.download_button("Download Ombudsman complaint", ombudsman_edited, "rbi_ombudsman_complaint.txt", "text/plain", width="stretch")
 
     with tab3:
-        st.markdown("### Tier 4 · Formal legal notice")
+        st.markdown("### Counsel-review legal notice")
         st.caption("Have a qualified advocate review this draft before formal service.")
         legal_edited = st.text_area("Legal notice", legal, height=380, label_visibility="collapsed", key="a3_legal_edit")
         st.download_button("Download legal notice", legal_edited, f"legal_notice_{config.AGGREGATOR_SHORT.lower()}.txt", "text/plain", width="stretch")
@@ -200,23 +209,22 @@ with drafts_tab:
 
 
 with context:
-    with panel("Your case at a glance"):
+    with panel("Live case brief", "Updates as you complete the form.", key="a3-case-brief"):
+        st.markdown(f'<div class="a3-brief-status">{badge("Recommended route", "good")}<strong>{html.escape(recommended["name"])}</strong><small>{html.escape(recommended["contact"])}</small></div>', unsafe_allow_html=True)
         metric("Days unresolved", str(days_elapsed), issue_date.strftime("Since %d %b %Y"))
-        st.caption("RECOMMENDED NEXT STEP")
-        st.markdown(f"**{recommended['name']}**")
-        st.caption(recommended["contact"])
         if amount:
             metric("Amount in dispute", f"{config.CURRENCY_SYMBOL}{amount}", ISSUE_TYPES[issue_type])
-    section_title("Escalation path")
-    for tier in ESCALATION_TIERS:
-        active = tier["tier"] == recommended["tier"]
-        reached = days_elapsed >= tier["trigger_days"]
-        status = "Recommended" if active else ("Available" if reached else f"From day {tier['trigger_days']}")
-        tone = "good" if active else "info"
-        st.markdown(
-            f'<div class="case-line {"current" if active else ""}"><span class="case-number">{tier["tier"]:02}</span><div><strong>{html.escape(tier["name"])}</strong><p>{html.escape(tier["description"])}</p>{badge(status, tone)}</div></div>',
-            unsafe_allow_html=True,
-        )
+    with st.container(key="a3-route-map"):
+        section_title("Escalation map", "Advance only when the prior route is exhausted")
+        for tier in ESCALATION_TIERS:
+            active = tier["tier"] == recommended["tier"]
+            reached = days_elapsed >= tier["trigger_days"]
+            status = "Recommended" if active else ("Available" if reached else f"From day {tier['trigger_days']}")
+            tone = "good" if active else "info"
+            st.markdown(
+                f'<div class="case-line {"current" if active else ""}"><span class="case-number">{tier["tier"]:02}</span><div><strong>{html.escape(tier["name"])}</strong><p>{html.escape(tier["description"])}</p>{badge(status, tone)}</div></div>',
+                unsafe_allow_html=True,
+            )
     st.markdown("<br>", unsafe_allow_html=True)
     note("Keep the record clear.", "Attach the original support request, the provider’s response, and the relevant transaction records to your correspondence.")
 
