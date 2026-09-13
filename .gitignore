@@ -14,3 +14,8 @@ venv/
 
 # Local cross-service runtime state
 runtime/
+
+# Local QA captures and generated exports
+.codex-tmp/
+tmp/
+output/
