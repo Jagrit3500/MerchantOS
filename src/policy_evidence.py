@@ -172,6 +172,7 @@ def get_policy_evidence(
     fluent model cannot add a claim that is absent from its citation.
     """
     local = search_local_policy(query)
+    local["extractive_chunks"] = list(local.get("chunks") or [])
     if not semantic:
         local["status"] = "Matched against the current local policy files."
         return local
@@ -195,6 +196,7 @@ def get_policy_evidence(
     return {
         "answer": local["answer"],
         "chunks": chunks,
+        "extractive_chunks": local["extractive_chunks"],
         "source": local["source"],
         "llm_used": False,
         "confidence": _confidence(top_score),
