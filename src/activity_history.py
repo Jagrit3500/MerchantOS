@@ -150,6 +150,35 @@ def read_activity(
     return item
 
 
+def update_activity_metadata(
+    user_id: int | str | None,
+    activity_id: int,
+    metadata: dict,
+) -> bool:
+    """Merge metadata into one owned history record without changing its content or time."""
+    with _database() as connection:
+        row = connection.execute(
+            "SELECT metadata_json FROM activity_history WHERE id = ? AND user_key = ?",
+            (int(activity_id), _user_key(user_id)),
+        ).fetchone()
+        if row is None:
+            return False
+        try:
+            payload = json.loads(row["metadata_json"])
+        except (json.JSONDecodeError, TypeError):
+            payload = {}
+        payload.update(metadata)
+        cursor = connection.execute(
+            "UPDATE activity_history SET metadata_json = ? WHERE id = ? AND user_key = ?",
+            (
+                json.dumps(payload, ensure_ascii=False, separators=(",", ":"), default=str),
+                int(activity_id),
+                _user_key(user_id),
+            ),
+        )
+        return cursor.rowcount == 1
+
+
 def delete_activity(user_id: int | str | None, activity_id: int) -> bool:
     """Delete one history record only when it belongs to the requesting user."""
     with _database() as connection:
