@@ -45,6 +45,19 @@ class ActivityInterfaceTests(unittest.TestCase):
             self.assertTrue(any(value.startswith('<div class="heatmap-card">') for value in markup))
             self.assertFalse(any(value.startswith('<a class="activity-card-link"') for value in markup))
 
+    def test_home_and_escalation_use_command_desk_designs(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            database = str(Path(temporary_directory) / "activity.sqlite3")
+            home = self._render("home.py", database)
+            escalation = self._render("Agent3/app.py", database)
+
+            self.assertFalse(list(home.exception))
+            self.assertFalse(list(escalation.exception))
+            self.assertTrue(any('class="home-hero"' in value for value in self._markup(home)))
+            self.assertTrue(any('class="a3-hero"' in value for value in self._markup(escalation)))
+            self.assertEqual(len(escalation.tabs), 7)
+            self.assertTrue(any("Assistant Nodal Officer" in value for value in self._markup(escalation)))
+
     def test_workspace_history_links_and_deletes_own_record(self) -> None:
         with tempfile.TemporaryDirectory() as temporary_directory:
             database = str(Path(temporary_directory) / "activity.sqlite3")
@@ -147,6 +160,82 @@ class ActivityInterfaceTests(unittest.TestCase):
                 self.assertEqual(len(activity_history.read_activity_history(0, "agent2")), 2)
                 app.button(key="confirm_clear_history_agent2").click().run(timeout=30)
                 self.assertEqual(activity_history.read_activity_history(0, "agent2"), [])
+
+    def test_agent2_result_hides_workspace_history(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            database = str(Path(temporary_directory) / "activity.sqlite3")
+            app = self._render("Agent2/app.py", database)
+            self.assertFalse(list(app.exception))
+            self.assertTrue(any("Activity history" in value for value in self._markup(app)))
+            reconcile_sample = next(
+                button for button in app.button if button.label.startswith("Reconcile sample")
+            )
+            with (
+                patch.object(config, "ACTIVITY_DB_PATH", database),
+                patch.object(config, "AUTH_ENABLED", False),
+                patch.object(config, "AUTO_FETCH_POLICY_EVIDENCE", False),
+            ):
+                reconcile_sample.click().run(timeout=30)
+
+            self.assertFalse(list(app.exception))
+            self.assertTrue(app.session_state.a2_done)
+            self.assertFalse(any("Activity history" in value for value in self._markup(app)))
+            self.assertFalse(any((button.key or "").startswith("delete_activity_") for button in app.button))
+            self.assertTrue(
+                any("Settlement timing was not assessed" in value for value in self._markup(app))
+            )
+
+    def test_agent2_history_record_reopens_its_reconciliation_result(self) -> None:
+        report = (
+            "settlement_date,transaction_id,amount,fee,tax,settlement_amount,status,payment_method,transaction_date\n"
+            ",pay_SAVED_HOLD_001,12500,0,0,0,on_hold,upi,2026-09-01\n"
+        )
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            database = str(Path(temporary_directory) / "activity.sqlite3")
+            with patch.object(config, "ACTIVITY_DB_PATH", database):
+                activity_id = activity_history.record_activity(
+                    0,
+                    "agent2",
+                    "reconciliation_completed",
+                    "Reconciled saved report",
+                    "1 transaction · 1 held or pending · ₹12,500.00 to review",
+                    {"source": "saved-report.csv", "input_csv": report},
+                )
+
+            history_app = self._render("Agent2/app.py", database)
+            history_card = next(
+                value for value in self._markup(history_app)
+                if value.startswith('<a class="activity-card-link"')
+            )
+            self.assertIn(f"activity={activity_id}", history_card)
+
+            app = AppTest.from_file(PROJECT_ROOT / "Agent2/app.py")
+            app.query_params["activity"] = str(activity_id)
+            with (
+                patch.object(config, "AUTH_ENABLED", False),
+                patch.object(config, "ACTIVITY_DB_PATH", database),
+                patch(
+                    "src.policy_evidence.get_policy_evidence",
+                    return_value={
+                        "answer": "Saved policy evidence",
+                        "confidence": {"score": 0.72, "label": "medium"},
+                        "source": "test_policy.txt",
+                        "retrieval": "Semantic source recheck",
+                        "confidence_method": "Top cosine similarity",
+                        "checked_at": "12 Sep 2026",
+                    },
+                ),
+            ):
+                app.run(timeout=30)
+
+            self.assertFalse(list(app.exception))
+            self.assertTrue(app.session_state.a2_done)
+            self.assertEqual(app.session_state.a2_source, "saved-report.csv")
+            self.assertEqual(app.session_state.a2_summary["total_gross"], 12500)
+            self.assertTrue(any("pay_SAVED_HOLD_001" in value for value in self._markup(app)))
+            self.assertFalse(any("Activity history" in value for value in self._markup(app)))
+            with patch.object(config, "ACTIVITY_DB_PATH", database):
+                self.assertEqual(len(activity_history.read_activity_history(0, "agent2")), 1)
 
     def test_agent1_refreshes_semantic_evidence_and_displays_confidence(self) -> None:
         answers = [
