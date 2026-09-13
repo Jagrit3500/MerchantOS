@@ -208,6 +208,35 @@ def fetch_evidence(
     return result
 
 
+def render_evidence_passage_cards(meta: dict) -> None:
+    """Present retrieved passages as readable, source-labelled evidence cards."""
+    chunks = meta.get("extractive_chunks") or []
+    if not chunks:
+        fallback = (st.session_state.get("a1_evidence") or "").strip()
+        if fallback:
+            st.markdown(fallback)
+        else:
+            st.info("No policy passage matched this diagnosis. Refresh after updating the policy library.")
+        return
+
+    cards = []
+    for index, chunk in enumerate(chunks, 1):
+        passage = " ".join(str(chunk.get("text", "")).split())
+        if len(passage) > config.POLICY_EVIDENCE_EXCERPT_CHARS:
+            passage = passage[: config.POLICY_EVIDENCE_EXCERPT_CHARS].rsplit(" ", 1)[0] + "…"
+        source = str(chunk.get("source", "Local policy library"))
+        page = chunk.get("page")
+        source_label = f"Source · {source}" + (f" · Page {page}" if page else "")
+        cards.append(
+            '<article class="a1-policy-card">'
+            f'<div class="a1-policy-card-index">{index:02}</div><div>'
+            f'<h4>{esc(str(chunk.get("section", "Policy passage")))}</h4>'
+            f'<p>{esc(passage)}</p><span>{esc(source_label)}</span>'
+            '</div></article>'
+        )
+    st.markdown(f'<div class="a1-policy-cards">{"".join(cards)}</div>', unsafe_allow_html=True)
+
+
 def question_progress(step: int, total: int) -> str:
     """Render a compact, accessible step rail for the active questionnaire."""
     segments = "".join(
@@ -463,7 +492,7 @@ else:
             st.caption("The score measures query-to-source relevance; it is not legal certainty or diagnosis probability.")
             if meta.get("status"):
                 st.info(meta["status"])
-            st.markdown(st.session_state.a1_evidence)
+            render_evidence_passage_cards(meta)
             st.caption(
                 "Refresh runs the same deterministic query again. The score normally stays the same "
                 "until the diagnosis query or indexed policy files change."
