@@ -17,7 +17,7 @@ for path in (AGENT_DIR, ROOT_DIR):
     if path not in sys.path:
         sys.path.insert(0, path)
 
-from escalation_agent import ESCALATION_TIERS, ISSUE_TYPES, EscalationAgent
+import escalation_agent as _escalation
 
 import src.ui as _ui
 from src import config
@@ -29,6 +29,10 @@ from src.activity_history import (
 from src.policy_evidence import get_policy_evidence
 
 importlib.reload(_ui)
+importlib.reload(_escalation)
+ESCALATION_TIERS = _escalation.ESCALATION_TIERS
+ISSUE_TYPES = _escalation.ISSUE_TYPES
+EscalationAgent = _escalation.EscalationAgent
 from src.ui import (
     activity_history,
     badge,
