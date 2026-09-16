@@ -190,7 +190,7 @@ def activity_history(section: str) -> None:
                 workspace_url = urls[entry["section"]]
                 if entry["section"] == "agent1" and entry.get("metadata", {}).get("answers"):
                     workspace_url = f'{workspace_url}?{urlencode({"activity": entry["id"]})}'
-                elif entry["section"] == "agent2":
+                elif entry["section"] in {"agent2", "agent3"}:
                     workspace_url = f'{workspace_url.rstrip("/")}/?{urlencode({"activity": entry["id"]})}'
                 st.markdown(
                     f'<a class="activity-card-link" href="{esc(workspace_url)}" target="_self">'

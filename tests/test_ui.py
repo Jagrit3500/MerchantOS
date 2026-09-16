@@ -68,24 +68,15 @@ class ActivityInterfaceTests(unittest.TestCase):
                 any('class="home-hero"' in value for value in self._markup(home))
             )
             self.assertTrue(
-                any('class="a3-hero"' in value for value in self._markup(escalation))
-            )
-            self.assertEqual(len(escalation.tabs), 3)
-            self.assertTrue(
                 any(
-                    "Evidence room locked" in value
+                    'class="a3-intake-hero"' in value
                     for value in self._markup(escalation)
                 )
             )
-            self.assertTrue(
-                any(
-                    "Correspondence locked" in value
-                    for value in self._markup(escalation)
-                )
-            )
+            self.assertEqual(len(escalation.tabs), 0)
             self.assertFalse(
                 any(
-                    "Collect the source record" in value
+                    "Supporting policy context" in value
                     for value in self._markup(escalation)
                 )
             )
@@ -96,10 +87,7 @@ class ActivityInterfaceTests(unittest.TestCase):
                 )
             )
             self.assertTrue(
-                any(
-                    "Assistant Nodal Officer" in value
-                    for value in self._markup(escalation)
-                )
+                any("Activity history" in value for value in self._markup(escalation))
             )
 
     def test_agent3_requires_case_then_evidence_before_generating_snapshot_drafts(
@@ -127,9 +115,9 @@ class ActivityInterfaceTests(unittest.TestCase):
 
             run_app()
             self.assertFalse(list(app.exception))
-            self.assertEqual(len(app.tabs), 3)
+            self.assertEqual(len(app.tabs), 0)
             self.assertFalse(
-                any("Collect the source record" in value for value in self._markup(app))
+                any("Supporting policy context" in value for value in self._markup(app))
             )
 
             values = {
@@ -168,10 +156,9 @@ class ActivityInterfaceTests(unittest.TestCase):
             app.date_input[0].set_value(issue_started)
             run_app()
 
-            app.button(key="a3_submit_case").click()
+            app.button(key="a3_create_workspace").click()
             run_app()
             self.assertFalse(list(app.exception))
-            self.assertEqual(app.session_state.a3_step, 1)
             self.assertEqual(
                 app.session_state.a3_submitted_case["merchant"]["name"], "Rahul Sharma"
             )
@@ -182,30 +169,20 @@ class ActivityInterfaceTests(unittest.TestCase):
                 app.session_state.a3_submitted_case["issue"]["amount"], "45,000.00"
             )
             self.assertTrue(
-                any("Collect the source record" in value for value in self._markup(app))
+                any(
+                    'class="a3-workspace-hero"' in value
+                    for value in self._markup(app)
+                )
             )
             self.assertTrue(
-                any("Correspondence locked" in value for value in self._markup(app))
+                any("Supporting policy context" in value for value in self._markup(app))
             )
-            with patch.object(config, "ACTIVITY_DB_PATH", database):
-                self.assertEqual(
-                    len(activity_history.read_activity_history(0, "agent3")), 1
-                )
-
-            app.button(key="a3_submit_case").click()
-            run_app()
-            with patch.object(config, "ACTIVITY_DB_PATH", database):
-                self.assertEqual(
-                    len(activity_history.read_activity_history(0, "agent3")), 1
-                )
-
-            app.checkbox(key="a3_evidence_reviewed").set_value(True)
-            run_app()
-            app.button(key="a3_prepare_correspondence").click()
-            run_app()
-            self.assertFalse(list(app.exception))
-            self.assertEqual(app.session_state.a3_step, 2)
             self.assertEqual(len(app.tabs), 7)
+            self.assertFalse(any("Activity history" in value for value in self._markup(app)))
+            with patch.object(config, "ACTIVITY_DB_PATH", database):
+                self.assertEqual(
+                    len(activity_history.read_activity_history(0, "agent3")), 1
+                )
 
             drafts = [
                 app.text_area(key="a3_grievance_edit").value,
@@ -221,6 +198,42 @@ class ActivityInterfaceTests(unittest.TestCase):
                 self.assertNotIn("[YOUR NAME]", draft)
                 self.assertNotIn("[YOUR BUSINESS NAME]", draft)
                 self.assertNotIn("[YOUR MERCHANT ID]", draft)
+
+            saved_activity_id = app.session_state.a3_loaded_activity_id
+            app.button(key="a3_back_to_desk").click()
+            run_app()
+            self.assertFalse(list(app.exception))
+            self.assertTrue(any("Activity history" in value for value in self._markup(app)))
+            history_card = next(
+                value
+                for value in self._markup(app)
+                if value.startswith('<a class="activity-card-link"')
+            )
+            self.assertIn(f"activity={saved_activity_id}", history_card)
+
+            reopened = AppTest.from_file(PROJECT_ROOT / "Agent3/app.py")
+            reopened.query_params["activity"] = str(saved_activity_id)
+            with (
+                patch.object(config, "AUTH_ENABLED", False),
+                patch.object(config, "AUTO_FETCH_POLICY_EVIDENCE", False),
+                patch.object(config, "ACTIVITY_DB_PATH", database),
+                patch(
+                    "src.policy_evidence.search_local_policy",
+                    return_value=policy_result,
+                ),
+            ):
+                reopened.run(timeout=30)
+            self.assertFalse(list(reopened.exception))
+            self.assertTrue(
+                any(
+                    'class="a3-workspace-hero"' in value
+                    for value in self._markup(reopened)
+                )
+            )
+            self.assertFalse(
+                any("Activity history" in value for value in self._markup(reopened))
+            )
+            self.assertIn("Rahul Sharma", reopened.text_area(key="a3_grievance_edit").value)
 
     def test_workspace_history_links_and_deletes_own_record(self) -> None:
         with tempfile.TemporaryDirectory() as temporary_directory:
