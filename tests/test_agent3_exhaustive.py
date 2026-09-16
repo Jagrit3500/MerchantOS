@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import unittest
+from datetime import date
 
 from Agent3.escalation_agent import ESCALATION_TIERS, ISSUE_TYPES, EscalationAgent
 from src import config
@@ -23,6 +24,24 @@ class Agent3BoundaryTests(unittest.TestCase):
                         self.agent.recommend_tier(tier["trigger_days"] - 1)["tier"],
                         ESCALATION_TIERS[index - 1]["tier"],
                     )
+
+    def test_mixed_calendar_and_business_day_routes(self) -> None:
+        self.assertEqual(self.agent.recommend_tier(12, 9)["tier"], 1)
+        self.assertEqual(self.agent.recommend_tier(12, 10)["tier"], 2)
+        self.assertEqual(self.agent.recommend_tier(29, 20)["tier"], 3)
+        self.assertEqual(self.agent.recommend_tier(30, 20)["tier"], 4)
+        self.assertEqual(self.agent.recommend_tier(90, 64)["tier"], 5)
+
+    def test_business_day_counter_excludes_weekends(self) -> None:
+        self.assertEqual(
+            self.agent.calculate_business_days(
+                date(2026, 9, 7), date(2026, 9, 14)
+            ),
+            5,
+        )
+
+    def test_current_ombudsman_scheme_is_used(self) -> None:
+        self.assertIn("2026", config.OMBUDSMAN_SCHEME_REFERENCE)
 
     def test_public_catalog_results_cannot_mutate_global_configuration(self) -> None:
         tiers = self.agent.get_all_tiers()

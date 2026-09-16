@@ -1,5 +1,6 @@
 import os
 from urllib.parse import urlsplit
+
 from dotenv import load_dotenv
 
 # Always load .env from the project root (MerchantOS folder), not cwd
@@ -128,7 +129,7 @@ PA_PRICING_REFERENCE = os.getenv(
     "PA_PRICING_REFERENCE", "paragraph 10(c), where its MDR directions apply"
 )
 OMBUDSMAN_SCHEME_REFERENCE = os.getenv(
-    "OMBUDSMAN_SCHEME_REFERENCE", "Reserve Bank - Integrated Ombudsman Scheme, 2021"
+    "OMBUDSMAN_SCHEME_REFERENCE", "Reserve Bank - Integrated Ombudsman Scheme, 2026"
 )
 CONSUMER_LAW_REFERENCE = os.getenv("CONSUMER_LAW_REFERENCE", "Consumer Protection Act, 2019")
 POLICY_LAST_VERIFIED_DATE = os.getenv("POLICY_LAST_VERIFIED_DATE", "2026-09-13")
@@ -261,7 +262,7 @@ GRIEVANCE_TRIGGER_DAYS = int(os.getenv("GRIEVANCE_TRIGGER_DAYS", "10"))
 NODAL_TRIGGER_DAYS = int(os.getenv("NODAL_TRIGGER_DAYS", "20"))
 GRIEVANCE_DEADLINE_DAYS = int(os.getenv("GRIEVANCE_DEADLINE_DAYS", "30"))
 OMBUDSMAN_TRIGGER_DAYS = int(os.getenv("OMBUDSMAN_TRIGGER_DAYS", "30"))
-OMBUDSMAN_DEADLINE_DAYS = int(os.getenv("OMBUDSMAN_DEADLINE_DAYS", "365"))
+OMBUDSMAN_DEADLINE_DAYS = int(os.getenv("OMBUDSMAN_DEADLINE_DAYS", "90"))
 LEGAL_TRIGGER_DAYS = int(os.getenv("LEGAL_TRIGGER_DAYS", "90"))
 GRIEVANCE_LETTER_DEADLINE_DAYS = int(os.getenv("GRIEVANCE_LETTER_DEADLINE_DAYS", "7"))
 SETTLEMENT_RELEASE_REQUEST_DAYS = int(os.getenv("SETTLEMENT_RELEASE_REQUEST_DAYS", "2"))

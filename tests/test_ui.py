@@ -156,6 +156,25 @@ class ActivityInterfaceTests(unittest.TestCase):
             app.date_input[0].set_value(issue_started)
             run_app()
 
+            next(
+                widget for widget in app.text_input if widget.label == "Registered email *"
+            ).set_value("not-an-email")
+            next(
+                widget for widget in app.text_input if widget.label == "Phone number *"
+            ).set_value("phone")
+            app.button(key="a3_create_workspace").click()
+            run_app()
+            self.assertTrue(
+                any("valid registered email" in error.value for error in app.error)
+            )
+            next(
+                widget for widget in app.text_input if widget.label == "Registered email *"
+            ).set_value("rahul@example.com")
+            next(
+                widget for widget in app.text_input if widget.label == "Phone number *"
+            ).set_value("+91 9876543210")
+            run_app()
+
             app.button(key="a3_create_workspace").click()
             run_app()
             self.assertFalse(list(app.exception))
@@ -199,6 +218,11 @@ class ActivityInterfaceTests(unittest.TestCase):
                 self.assertNotIn("[YOUR BUSINESS NAME]", draft)
                 self.assertNotIn("[YOUR MERCHANT ID]", draft)
 
+            persisted_grievance = drafts[0] + "\n\nMERCHANT EDIT SAVED"
+            app.checkbox[0].set_value(True)
+            app.text_area(key="a3_grievance_edit").set_value(persisted_grievance)
+            run_app()
+
             saved_activity_id = app.session_state.a3_loaded_activity_id
             app.button(key="a3_back_to_desk").click()
             run_app()
@@ -234,6 +258,11 @@ class ActivityInterfaceTests(unittest.TestCase):
                 any("Activity history" in value for value in self._markup(reopened))
             )
             self.assertIn("Rahul Sharma", reopened.text_area(key="a3_grievance_edit").value)
+            self.assertEqual(
+                reopened.text_area(key="a3_grievance_edit").value,
+                persisted_grievance,
+            )
+            self.assertTrue(reopened.checkbox[0].value)
 
     def test_workspace_history_links_and_deletes_own_record(self) -> None:
         with tempfile.TemporaryDirectory() as temporary_directory:

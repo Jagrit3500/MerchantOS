@@ -4,8 +4,9 @@ import importlib
 import json
 import logging
 import os
+import re
 import sys
-from datetime import datetime
+from datetime import datetime, timedelta
 from decimal import Decimal, InvalidOperation
 
 import streamlit as st
@@ -20,8 +21,12 @@ from escalation_agent import ESCALATION_TIERS, ISSUE_TYPES, EscalationAgent
 
 import src.ui as _ui
 from src import config
-from src.activity_history import read_activity, record_activity
-from src.policy_evidence import search_local_policy
+from src.activity_history import (
+    read_activity,
+    record_activity,
+    update_activity_metadata,
+)
+from src.policy_evidence import get_policy_evidence
 
 importlib.reload(_ui)
 from src.ui import (
@@ -51,31 +56,28 @@ LOGGER = logging.getLogger(__name__)
 CURRENT_DATE = datetime.now().astimezone().date()
 
 
+ISSUE_POLICY_QUERIES = {
+    "kyc_hold": "merchant KYC due diligence account hold paragraph 13 remediation",
+    "settlement_hold": "merchant settlement held funds escrow paragraph 16 grievance paragraph 8",
+    "settlement_missing": "missing merchant settlement escrow credit timeline paragraph 16",
+    "fee_overcharge": "merchant pricing fees MDR agreement disclosure paragraph 10",
+    "tat_violation": "merchant settlement timeline schedule agreement paragraph 16 Table 1",
+    "account_suspended": "merchant account suspension restriction reason grievance paragraph 8",
+    "chargeback_dispute": "merchant chargeback dispute refund responsibilities grievance redressal",
+    "other": "merchant complaint grievance officer escalation matrix paragraph 8",
+}
+
+
 def fetch_policy_evidence(issue_key: str, use_live_retrieval: bool = True) -> dict:
     query = (
-        "What policy evidence, merchant complaint steps, settlement duties, and escalation requirements "
-        f"apply to this payment aggregator dispute: {ISSUE_TYPES[issue_key]}? "
-        f"Use {config.PA_DIRECTIONS_REFERENCE} and the configured provider policy."
+        f"{ISSUE_POLICY_QUERIES[issue_key]}. {ISSUE_TYPES[issue_key]}. "
+        f"Use {config.PA_DIRECTIONS_REFERENCE} and the provider's published policy."
     )
-    local = search_local_policy(query)
-    evidence = local.get("answer", "").strip()
-    source = local.get("source", "Local policy library")
-    retrieval = "Local document search"
-    if use_live_retrieval:
-        try:
-            from src.llm_agent import get_answer as rag_get_answer
-
-            result = rag_get_answer(query)
-            evidence = result.get("answer", "").strip() or evidence
-            chunks = result.get("chunks", [])
-            if chunks:
-                source = chunks[0].get("source", source)
-            retrieval = "Semantic policy search"
-        except Exception:
-            LOGGER.debug(
-                "Semantic policy retrieval failed; using local evidence", exc_info=True
-            )
-    return {"answer": evidence, "source": source, "retrieval": retrieval}
+    try:
+        return get_policy_evidence(query, semantic=use_live_retrieval)
+    except Exception:
+        LOGGER.debug("Policy retrieval failed", exc_info=True)
+        return get_policy_evidence(query, semantic=False)
 
 
 def normalized_amount(raw_amount: str) -> tuple[str, str | None]:
@@ -91,6 +93,17 @@ def normalized_amount(raw_amount: str) -> tuple[str, str | None]:
     return f"{amount:,.2f}", None
 
 
+def contact_validation_errors(email: str, phone: str) -> list[str]:
+    errors = []
+    if not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", email.strip()):
+        errors.append("Enter a valid registered email address.")
+    clean_phone = phone.strip()
+    digits = re.sub(r"\D", "", clean_phone)
+    if not re.fullmatch(r"\+?[0-9\s().-]+", clean_phone) or not 7 <= len(digits) <= 15:
+        errors.append("Enter a valid phone number containing 7 to 15 digits.")
+    return errors
+
+
 def clear_document_state() -> None:
     for key in ("a3_grievance_edit", "a3_ombudsman_edit", "a3_legal_edit"):
         st.session_state.pop(key, None)
@@ -102,10 +115,43 @@ def clear_workspace() -> None:
         "a3_policy_evidence",
         "a3_loaded_activity_id",
         "a3_workspace_flash",
+        "a3_workspace_persisted",
     ):
         st.session_state.pop(key, None)
     clear_document_state()
     st.query_params.pop("activity", None)
+
+
+def case_key(snapshot: dict) -> str:
+    return hashlib.sha256(snapshot["signature"].encode("utf-8")).hexdigest()[:16]
+
+
+def timing_values(issue: dict) -> tuple[int, int]:
+    calendar_days = max(int(issue.get("days_elapsed", 0)), 0)
+    if issue.get("business_days_elapsed") is not None:
+        return calendar_days, max(int(issue["business_days_elapsed"]), 0)
+    try:
+        start = datetime.strptime(  # noqa: DTZ007 - parsing a date-only stored value
+            issue["first_reported_date"], "%d %B %Y"
+        ).date()
+        end = start + timedelta(days=calendar_days)
+        business_days = agent.calculate_business_days(start, end)
+    except (KeyError, TypeError, ValueError):
+        business_days = calendar_days
+    issue["business_days_elapsed"] = business_days
+    return calendar_days, business_days
+
+
+def persist_workspace_value(name: str, value: dict) -> None:
+    activity_id = st.session_state.get("a3_loaded_activity_id")
+    if not isinstance(activity_id, int):
+        return
+    persisted = st.session_state.setdefault("a3_workspace_persisted", {})
+    if persisted.get(name) == value:
+        return
+    user_id = st.session_state.get("merchantos_user", {}).get("id", "local")
+    if update_activity_metadata(user_id, activity_id, {name: value}):
+        persisted[name] = value
 
 
 def valid_case_snapshot(value: object) -> bool:
@@ -177,21 +223,49 @@ def restore_activity_route() -> str | None:
     st.session_state.a3_policy_evidence = policy
     st.session_state.a3_loaded_activity_id = activity_id
     clear_document_state()
+    workspace_state = {
+        "evidence_state": metadata.get("evidence_state", {}),
+        "document_edits": metadata.get("document_edits", {}),
+    }
+    st.session_state.a3_workspace_persisted = workspace_state
+    evidence_state = workspace_state["evidence_state"]
+    if isinstance(evidence_state, dict):
+        current_case_key = case_key(snapshot)
+        for index, checked in evidence_state.items():
+            if str(index).isdigit():
+                st.session_state[f"a3_ev_{current_case_key}_{index}"] = bool(checked)
+    document_edits = workspace_state["document_edits"]
+    if isinstance(document_edits, dict):
+        for name, widget_key in {
+            "grievance": "a3_grievance_edit",
+            "ombudsman": "a3_ombudsman_edit",
+            "legal": "a3_legal_edit",
+        }.items():
+            if isinstance(document_edits.get(name), str):
+                st.session_state[widget_key] = document_edits[name]
     return None
 
 
-def route_status(tier: dict, recommended: dict, days_elapsed: int) -> tuple[str, str]:
+def route_status(
+    tier: dict, recommended: dict, calendar_days: int, business_days: int
+) -> tuple[str, str]:
     if tier["tier"] == recommended["tier"]:
         return "Recommended now", "good"
-    if days_elapsed >= tier["trigger_days"]:
+    elapsed = business_days if tier["day_basis"] == "business" else calendar_days
+    if elapsed >= tier["trigger_days"]:
         return "Available", "info"
-    return f"From day {tier['trigger_days']}", "info"
+    basis = "business" if tier["day_basis"] == "business" else "calendar"
+    return f"From {tier['trigger_days']} {basis} days", "info"
 
 
-def render_route_ladder(recommended: dict, days_elapsed: int) -> None:
+def render_route_ladder(
+    recommended: dict, calendar_days: int, business_days: int
+) -> None:
     cards = []
     for tier in ESCALATION_TIERS:
-        status, tone = route_status(tier, recommended, days_elapsed)
+        status, tone = route_status(
+            tier, recommended, calendar_days, business_days
+        )
         cards.append(
             f'<article class="a3-route-card {"active" if tier["tier"] == recommended["tier"] else ""}">'
             f'<div class="a3-route-head"><span>{tier["tier"]:02}</span>{badge(status, tone)}</div>'
@@ -338,13 +412,21 @@ def render_intake() -> None:
                 "at least one milestone": timeline_text.strip(),
             }
             missing = [label for label, value in required_fields.items() if not value]
+            contact_errors = contact_validation_errors(email, phone)
             if missing:
                 st.error("Complete the required fields: " + ", ".join(missing) + ".")
+            elif contact_errors:
+                st.error(" ".join(contact_errors))
             elif amount_error:
                 st.error(amount_error)
             else:
                 days_elapsed = max(agent.calculate_days(issue_date), 0)
-                recommended = agent.recommend_tier(days_elapsed)
+                business_days_elapsed = max(
+                    agent.calculate_business_days(issue_date), 0
+                )
+                recommended = agent.recommend_tier(
+                    days_elapsed, business_days_elapsed
+                )
                 merchant = {
                     "name": merchant_name.strip(),
                     "business_name": business_name.strip(),
@@ -358,6 +440,7 @@ def render_intake() -> None:
                     "issue_type": issue_type,
                     "first_reported_date": issue_date.strftime("%d %B %Y"),
                     "days_elapsed": days_elapsed,
+                    "business_days_elapsed": business_days_elapsed,
                     "amount": amount_value,
                     "txn_ids": txn_ids.strip() or "As per attached statement",
                     "description": description.strip(),
@@ -369,7 +452,7 @@ def render_intake() -> None:
                     "issue": {
                         key: value
                         for key, value in issue.items()
-                        if key != "days_elapsed"
+                        if key not in {"days_elapsed", "business_days_elapsed"}
                     },
                 }
                 signature = json.dumps(signature_payload, sort_keys=True)
@@ -392,18 +475,25 @@ def render_intake() -> None:
                     "agent3",
                     "case_saved",
                     ISSUE_TYPES[issue_type],
-                    f"{days_elapsed} days unresolved · {config.CURRENCY_SYMBOL}{amount_value} · {recommended['name']}",
+                    f"{days_elapsed} calendar / {business_days_elapsed} business days · {config.CURRENCY_SYMBOL}{amount_value} · {recommended['name']}",
                     {
                         "issue_type": issue_type,
                         "days_elapsed": days_elapsed,
+                        "business_days_elapsed": business_days_elapsed,
                         "recommended_tier": recommended["tier"],
                         "case_snapshot": snapshot,
                         "policy_evidence": policy,
+                        "evidence_state": {},
+                        "document_edits": {},
                     },
                 )
                 st.session_state.a3_submitted_case = snapshot
                 st.session_state.a3_policy_evidence = policy
                 st.session_state.a3_loaded_activity_id = activity_id
+                st.session_state.a3_workspace_persisted = {
+                    "evidence_state": {},
+                    "document_edits": {},
+                }
                 st.session_state.a3_workspace_flash = (
                     "Case workspace created from your submitted record."
                 )
@@ -426,6 +516,7 @@ def render_intake() -> None:
 
 def render_case_overview(snapshot: dict, recommended: dict) -> None:
     merchant, issue = snapshot["merchant"], snapshot["issue"]
+    calendar_days, business_days = timing_values(issue)
     facts = [
         ("Merchant", merchant["business_name"]),
         ("Merchant ID", merchant["merchant_id"]),
@@ -465,7 +556,7 @@ def render_case_overview(snapshot: dict, recommended: dict) -> None:
     with right:  # noqa: SIM117 - preserve explicit Streamlit layout scopes
         with panel(
             "Recommended next action",
-            "Based on elapsed calendar days",
+            "Provider levels use weekdays; external review uses calendar days",
             key="a3-next-action",
         ):
             st.markdown(
@@ -476,16 +567,16 @@ def render_case_overview(snapshot: dict, recommended: dict) -> None:
         "Escalation route",
         "Progress only after the prior channel has been used or exhausted",
     )
-    render_route_ladder(recommended, int(issue["days_elapsed"]))
+    render_route_ladder(recommended, calendar_days, business_days)
 
 
 def render_evidence_room(snapshot: dict) -> None:
-    issue_type, signature = snapshot["issue_type"], snapshot["signature"]
-    case_key = hashlib.sha256(signature.encode("utf-8")).hexdigest()[:16]
+    issue_type = snapshot["issue_type"]
+    current_case_key = case_key(snapshot)
     checklist = agent.get_evidence_checklist(issue_type)
     section_title("Evidence room", "A case-specific packet—not a legal conclusion")
     progress = sum(
-        bool(st.session_state.get(f"a3_ev_{case_key}_{index}"))
+        bool(st.session_state.get(f"a3_ev_{current_case_key}_{index}"))
         for index in range(len(checklist))
     )
     readiness = round(progress / len(checklist) * 100) if checklist else 0
@@ -495,8 +586,12 @@ def render_evidence_room(snapshot: dict) -> None:
     )
     evidence_column, policy_column = st.columns([0.8, 1.2], gap="large")
     with evidence_column, st.container(border=True, key="a3-evidence-list"):
+        evidence_state = {}
         for index, item in enumerate(checklist):
-            st.checkbox(item, key=f"a3_ev_{case_key}_{index}")
+            evidence_state[str(index)] = st.checkbox(
+                item, key=f"a3_ev_{current_case_key}_{index}"
+            )
+        persist_workspace_value("evidence_state", evidence_state)
     with policy_column:  # noqa: SIM117 - preserve explicit Streamlit layout scopes
         with panel(
             "Supporting policy context",
@@ -538,9 +633,9 @@ def render_correspondence(snapshot: dict) -> None:
         st.caption(
             "Confirm every fact and attach the evidence listed in the case packet."
         )
+        st.session_state.setdefault("a3_grievance_edit", grievance)
         grievance_edited = st.text_area(
             "Grievance letter",
-            grievance,
             height=430,
             label_visibility="collapsed",
             key="a3_grievance_edit",
@@ -557,9 +652,9 @@ def render_correspondence(snapshot: dict) -> None:
         st.warning(
             "Elapsed days alone do not establish eligibility. Confirm entity coverage, the prior written complaint, the provider response, and every Scheme exclusion before filing."
         )
+        st.session_state.setdefault("a3_ombudsman_edit", ombudsman)
         ombudsman_edited = st.text_area(
             "Ombudsman complaint",
-            ombudsman,
             height=430,
             label_visibility="collapsed",
             key="a3_ombudsman_edit",
@@ -574,9 +669,9 @@ def render_correspondence(snapshot: dict) -> None:
     with tab3:
         st.markdown("### Counsel-review legal notice")
         st.warning("This route requires review by a qualified advocate before service.")
+        st.session_state.setdefault("a3_legal_edit", legal)
         legal_edited = st.text_area(
             "Legal notice",
-            legal,
             height=430,
             label_visibility="collapsed",
             key="a3_legal_edit",
@@ -623,6 +718,14 @@ def render_correspondence(snapshot: dict) -> None:
         st.markdown(
             f'<ol class="a3-filing-guide">{guide_html}</ol>', unsafe_allow_html=True
         )
+    persist_workspace_value(
+        "document_edits",
+        {
+            "grievance": grievance_edited,
+            "ombudsman": ombudsman_edited,
+            "legal": legal_edited,
+        },
+    )
 
 
 def render_workspace(snapshot: dict) -> None:
@@ -631,8 +734,8 @@ def render_workspace(snapshot: dict) -> None:
         snapshot["issue"],
         snapshot["issue_type"],
     )
-    days_elapsed = int(issue["days_elapsed"])
-    recommended = agent.recommend_tier(days_elapsed)
+    days_elapsed, business_days_elapsed = timing_values(issue)
+    recommended = agent.recommend_tier(days_elapsed, business_days_elapsed)
     activity_id = st.session_state.get("a3_loaded_activity_id")
     case_label = (
         f"CASE {activity_id:04}" if isinstance(activity_id, int) else "ACTIVE CASE"
@@ -658,7 +761,7 @@ def render_workspace(snapshot: dict) -> None:
         f"<h1>{esc(merchant['business_name'])}</h1><p>{esc(issue['description'])}</p>"
         f'<div class="a3-case-identity"><span>{esc(merchant["merchant_id"])}</span><span>{esc(merchant["name"])}</span><span>{esc(issue["first_reported_date"])}</span></div></div>'
         '<div class="a3-workspace-metrics">'
-        f"<div><span>DAYS OPEN</span><strong>{days_elapsed}</strong><small>{esc(snapshot['since_label'])}</small></div>"
+        f"<div><span>TIME OPEN</span><strong>{days_elapsed}</strong><small>calendar days · {business_days_elapsed} weekdays</small></div>"
         f"<div><span>VALUE AFFECTED</span><strong>{esc(amount_display)}</strong><small>{esc(ISSUE_TYPES[issue_type])}</small></div>"
         f'<div class="route"><span>NEXT ROUTE</span><strong>{esc(recommended["name"])}</strong><small>Review before advancing</small></div>'
         "</div></section>",

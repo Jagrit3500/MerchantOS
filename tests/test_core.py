@@ -6,7 +6,7 @@ from datetime import date
 from pathlib import Path
 from unittest.mock import patch
 
-from Agent1.kyc_agent import KYCDiagnosisAgent, QUESTIONS
+from Agent1.kyc_agent import QUESTIONS, KYCDiagnosisAgent
 from Agent1.ticket_drafter import draft_ticket
 from Agent2.reconciliation_agent import ReconciliationAgent
 from Agent3.escalation_agent import ESCALATION_TIERS, EscalationAgent
@@ -480,6 +480,15 @@ class EvidenceTests(unittest.TestCase):
         result = search_local_policy("RBI payment aggregator merchant due diligence paragraph 13")
         combined = result["answer"] + " " + result["source"]
         self.assertIn("rbi_pa_2025_knowledge.txt", combined)
+
+    def test_settlement_policy_query_does_not_rank_kyc_section(self) -> None:
+        result = search_local_policy(
+            "merchant settlement held funds escrow paragraph 16 grievance paragraph 8"
+        )
+        self.assertTrue(result["chunks"])
+        self.assertTrue(
+            all("KYC" not in chunk["section"].upper() for chunk in result["chunks"])
+        )
 
     def test_policy_evidence_preserves_extractive_source_cards(self) -> None:
         result = get_policy_evidence(

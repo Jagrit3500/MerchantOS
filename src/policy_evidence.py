@@ -14,7 +14,6 @@ from pathlib import Path
 
 from src import config
 
-
 LOGGER = logging.getLogger(__name__)
 _TOKEN_RE = re.compile(r"[a-z0-9]+")
 _HEADING_MAX_CHARS = getattr(
@@ -32,6 +31,13 @@ _STOP_WORDS = {
     "from", "how", "in", "is", "it", "of", "on", "or", "the", "their",
     "to", "under", "what", "when", "with",
 }
+_TOPIC_GROUPS = (
+    {"kyc", "diligence", "ckyc", "ckycr"},
+    {"settlement", "settlements", "escrow", "funds"},
+    {"fee", "fees", "pricing", "mdr"},
+    {"chargeback", "chargebacks", "refund", "refunds"},
+    {"suspension", "suspended", "deactivation", "deactivated"},
+)
 
 
 def _tokens(text: str) -> list[str]:
@@ -121,6 +127,19 @@ def search_local_policy(query: str) -> dict:
             if terms[term]:
                 inverse_frequency = math.log((total + 1) / (document_frequency[term] + 1)) + 1
                 score += min(terms[term], _TERM_FREQUENCY_CAP) * query_count * inverse_frequency
+        query_topics = {
+            index
+            for index, group in enumerate(_TOPIC_GROUPS)
+            if set(query_terms).intersection(group)
+        }
+        heading_tokens = set(_tokens(chunk["section"]))
+        heading_topics = {
+            index
+            for index, group in enumerate(_TOPIC_GROUPS)
+            if heading_tokens.intersection(group)
+        }
+        if query_topics and heading_topics and query_topics.isdisjoint(heading_topics):
+            score *= 0.15
         if score:
             ranked.append((score, chunk))
 

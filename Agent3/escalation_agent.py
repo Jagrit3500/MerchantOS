@@ -3,10 +3,18 @@ MerchantOS - Agent 3: Formal Escalation & Recovery Bot
 Generates RBI-cited formal escalation letters, tracks timelines, recommends next steps.
 """
 from __future__ import annotations
-import os, sys
+
+import os
+import sys
+from datetime import date, datetime, timedelta
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from src import config
-from datetime import date, timedelta
+
+
+def _today() -> date:
+    return datetime.now().astimezone().date()
 
 # ─── Escalation tiers (RBI / Consumer Protection Act based) ───────────────────
 _agg_name = config.AGGREGATOR_NAME
@@ -19,6 +27,7 @@ ESCALATION_TIERS = [
         "tier": 1,
         "name": f"{_agg_short} Support",
         "trigger_days": 0,
+        "day_basis": "business",
         "deadline_days": config.SUPPORT_DEADLINE_DAYS,
         "description": f"First point of contact. File via {_support_url} or in-app chat.",
         "contact": _support_url,
@@ -28,6 +37,7 @@ ESCALATION_TIERS = [
         "tier": 2,
         "name": f"{_agg_short} Assistant Nodal Officer",
         "trigger_days": config.GRIEVANCE_TRIGGER_DAYS,
+        "day_basis": "business",
         "deadline_days": config.GRIEVANCE_DEADLINE_DAYS,
         "description": f"If Level 1 is unresolved after {config.GRIEVANCE_TRIGGER_DAYS} business days, use the published Level 2 escalation form.",
         "contact": config.AGGREGATOR_ASSISTANT_NODAL_URL,
@@ -37,6 +47,7 @@ ESCALATION_TIERS = [
         "tier": 3,
         "name": f"{_agg_short} Nodal Officer",
         "trigger_days": config.NODAL_TRIGGER_DAYS,
+        "day_basis": "business",
         "deadline_days": config.GRIEVANCE_DEADLINE_DAYS,
         "description": f"If Level 2 is unresolved after {config.NODAL_TRIGGER_DAYS} business days, use the published Level 3 Nodal escalation form.",
         "contact": config.AGGREGATOR_NODAL_URL,
@@ -46,6 +57,7 @@ ESCALATION_TIERS = [
         "tier": 4,
         "name": "RBI Integrated Ombudsman eligibility review",
         "trigger_days": config.OMBUDSMAN_TRIGGER_DAYS,
+        "day_basis": "calendar",
         "deadline_days": config.OMBUDSMAN_DEADLINE_DAYS,
         "description": f"Check coverage, exclusions, and prior-complaint requirements before filing on {config.OMBUDSMAN_URL} under the RBI Integrated Ombudsman Scheme.",
         "contact": config.OMBUDSMAN_URL,
@@ -55,6 +67,7 @@ ESCALATION_TIERS = [
         "tier": 5,
         "name": "Consumer Forum / Legal Notice",
         "trigger_days": config.LEGAL_TRIGGER_DAYS,
+        "day_basis": "calendar",
         "deadline_days": None,
         "description": "Ask qualified counsel whether consumer status and jurisdiction apply before sending a legal notice or filing a complaint.",
         "contact": config.CONSUMER_HELP_URL,
@@ -145,12 +158,20 @@ INR = config.CURRENCY_SYMBOL
 class EscalationAgent:
     """Generates formal escalation letters and recommends escalation path."""
 
-    def recommend_tier(self, days_since_issue: int) -> dict:
-        """Return the appropriate escalation tier based on days elapsed."""
-        days_since_issue = max(int(days_since_issue), 0)
+    def recommend_tier(
+        self, calendar_days: int, business_days: int | None = None
+    ) -> dict:
+        """Return the route using each tier's published day-count basis."""
+        calendar_days = max(int(calendar_days), 0)
+        business_days = (
+            calendar_days if business_days is None else max(int(business_days), 0)
+        )
         recommended = ESCALATION_TIERS[0]
         for tier in ESCALATION_TIERS:
-            if days_since_issue >= tier["trigger_days"]:
+            elapsed = (
+                business_days if tier["day_basis"] == "business" else calendar_days
+            )
+            if elapsed >= tier["trigger_days"]:
                 recommended = tier
         return dict(recommended)
 
@@ -163,8 +184,21 @@ class EscalationAgent:
     def get_evidence_checklist(self, issue_type: str) -> list[str]:
         return list(EVIDENCE_CHECKLIST.get(issue_type, EVIDENCE_CHECKLIST["other"]))
 
-    def calculate_days(self, issue_date: date) -> int:
-        return max((date.today() - issue_date).days, 0)
+    def calculate_days(self, issue_date: date, end_date: date | None = None) -> int:
+        return max(((end_date or _today()) - issue_date).days, 0)
+
+    def calculate_business_days(
+        self, issue_date: date, end_date: date | None = None
+    ) -> int:
+        """Count Monday-Friday days after the start date; public holidays are excluded only if supplied externally."""
+        end = end_date or _today()
+        if end <= issue_date:
+            return 0
+        return sum(
+            1
+            for offset in range(1, (end - issue_date).days + 1)
+            if (issue_date + timedelta(days=offset)).weekday() < 5
+        )
 
     def draft_grievance_letter(self, merchant: dict, issue: dict) -> str:
         """Draft formal Razorpay Grievance Officer letter (Tier 2)."""
@@ -178,7 +212,7 @@ class EscalationAgent:
             f"{config.AGGREGATOR_ADDRESS}",
             f"Email: {_grievance_email}",
             "",
-            f"Date: {date.today().strftime('%d %B %Y')}",
+            f"Date: {_today().strftime('%d %B %Y')}",
             "",
             f"Subject: Formal Grievance - {issue_name} (Merchant ID: {merchant['merchant_id']})",
             "",
@@ -191,6 +225,7 @@ class EscalationAgent:
             f"  Type: {issue_name}",
             f"  First Reported: {issue['first_reported_date']}",
             f"  Days Elapsed: {issue['days_elapsed']} days",
+            f"  Business Days Elapsed: {issue.get('business_days_elapsed', issue['days_elapsed'])} weekdays (excluding public-holiday adjustments)",
             f"  Amount Affected: {INR}{issue.get('amount', 'N/A')}",
             f"  Transaction IDs: {issue.get('txn_ids', 'As per attached records')}",
             "",
@@ -221,7 +256,7 @@ class EscalationAgent:
             "Yours sincerely,",
             f"{merchant['name']}",
             f"{merchant['business_name']}",
-            f"Date: {date.today().strftime('%d %B %Y')}",
+            f"Date: {_today().strftime('%d %B %Y')}",
         ]
         return "\n".join(lines)
 
@@ -249,7 +284,7 @@ class EscalationAgent:
             f"Under: {config.OMBUDSMAN_SCHEME_REFERENCE}",
             f"Portal: {config.OMBUDSMAN_URL}",
             "",
-            f"Date: {date.today().strftime('%d %B %Y')}",
+            f"Date: {_today().strftime('%d %B %Y')}",
             "",
             "TO: The Ombudsman",
             "    RBI Integrated Ombudsman Scheme",
@@ -274,6 +309,7 @@ class EscalationAgent:
             f"  Issue Start Date:    {issue['first_reported_date']}",
             f"  Amount in Dispute:   {INR}{issue.get('amount', 'N/A')}",
             f"  Days Elapsed:        {issue['days_elapsed']} days",
+            f"  Business Days:       {issue.get('business_days_elapsed', issue['days_elapsed'])} weekdays (excluding public-holiday adjustments)",
             "",
             "SECTION D - DESCRIPTION OF COMPLAINT",
             "",
@@ -305,7 +341,7 @@ class EscalationAgent:
             "  [CONFIRM WHETHER THIS MATTER HAS BEEN FILED IN ANY OTHER FORUM]",
             "",
             f"Signature: {merchant['name']}",
-            f"Date: {date.today().strftime('%d %B %Y')}",
+            f"Date: {_today().strftime('%d %B %Y')}",
             "",
             "--- DOCUMENTS TO ATTACH ---",
             f"  (Upload all documents on {config.OMBUDSMAN_URL} during filing)",
@@ -326,7 +362,7 @@ class EscalationAgent:
             "DRAFT LEGAL NOTICE - QUALIFIED COUNSEL REVIEW REQUIRED",
             "Potential consumer-law route only if the merchant and transaction are eligible",
             "",
-            f"Date: {date.today().strftime('%d %B %Y')}",
+            f"Date: {_today().strftime('%d %B %Y')}",
             "",
             "FROM:",
             f"  {merchant['name']}",
@@ -367,7 +403,7 @@ class EscalationAgent:
             "",
             f"{merchant['name']}",
             "(Authorised Signatory)",
-            f"Date: {date.today().strftime('%d %B %Y')}",
+            f"Date: {_today().strftime('%d %B %Y')}",
         ]
         return "\n".join(lines)
 
@@ -384,7 +420,7 @@ if __name__ == "__main__":
         "state": "Maharashtra",
         "address": "123 Commercial Hub, Mumbai - 400001",
     }
-    today = date.today()
+    today = _today()
     issue = {
         "issue_type": "settlement_hold",
         "first_reported_date": (today - timedelta(days=35)).strftime("%Y-%m-%d"),
